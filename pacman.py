@@ -28,6 +28,9 @@ direction_comand = 0
 player_speed = 3
 score = 0
 
+def draw_score():
+    score_text = font.render(f'Score: {score}', True, 'white')
+    screen.blit(score_text, (10, 920))
 
 def check_collisions(scor):
     num1 = (HEIGHT - 50) // 32
@@ -133,7 +136,6 @@ def check_position(centerx, centery):
 
     return turns
 
-
 def move_player(play_x, play_y):
     #r, l, u, d
     if direction == 0 and turns_allowed[0]:
@@ -165,6 +167,7 @@ while run:
     turns_allowed = check_position(center_x, center_y)
     player_x, player_y = move_player(player_x, player_y)
     score = check_collisions(score)
+    draw_score()
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
