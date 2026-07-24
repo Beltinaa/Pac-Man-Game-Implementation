@@ -27,12 +27,22 @@ turns_allowed = [False, False, False, False]
 direction_comand = 0
 player_speed = 3
 score = 0
+powerup = False
+power_counter = 0
+eaten_ghost = [False, False, False, False]
+startup_counter = 0
+moving = False
+lives = 3
 
 def draw_score():
     score_text = font.render(f'Score: {score}', True, 'white')
     screen.blit(score_text, (10, 920))
+    if powerup:
+        pygame.draw.circle(screen, 'blue', (140, 930), 15)
+    for i in range(lives):
+        screen.blit(pygame.transform.scale(player_images[0], (30, 30)), (650 + i* 40, 915))
 
-def check_collisions(scor):
+def check_collisions(scor, power, power_count, eaten_ghosts):
     num1 = (HEIGHT - 50) // 32
     num2 = WIDTH //30
     if 0< player_x < 870:
@@ -42,8 +52,11 @@ def check_collisions(scor):
         if level[center_y // num1][center_x // num2] == 2:
             level[center_y // num1][center_x // num2] = 0
             scor += 50
+            power = True
+            power_count = 0
+            eaten_ghosts = [False, False, False, False]
     
-    return scor
+    return scor, power, power_count, eaten_ghosts
 
 def draw_board(lvl):
     num1 = ((HEIGHT -50) // 32)
@@ -60,13 +73,13 @@ def draw_board(lvl):
             if lvl[i][j] == 4:
                 pygame.draw.line(screen, 'blue', (j * num2, i * num1 + (0.5 * num1)),
                     (j * num2 + num2, i * num1 + (0.5  * num1)), 3)
-            if level[i][j] == 5:
+            if lvl[i][j] == 5:
                 pygame.draw.arc(screen, 'blue', [(j * num2 - (num2 * 0.4)) - 2, (i * num1 + (0.5 * num1)), num2, num1],
                                 0, PI / 2, 3)
-            if level[i][j] == 6:
+            if lvl[i][j] == 6:
                 pygame.draw.arc(screen, 'blue',
                                 [(j * num2 + (num2 * 0.5)), (i * num1 + (0.5 * num1)), num2, num1], PI / 2, PI, 3)
-            if level[i][j] == 7:
+            if lvl[i][j] == 7:
                 pygame.draw.arc(screen, 'blue', [(j * num2 + (num2 * 0.5)), (i * num1 - (0.4 * num1)), num2, num1], PI,
                                 3 * PI / 2, 3)
             if level[i][j] == 8:
@@ -158,16 +171,30 @@ while run:
     else:
         counter = 0
         flicker = True
+    if powerup and power_counter < 600: # 10 second
+        power_counter += 1
+    elif powerup and power_counter >= 600:
+        power_counter = 0
+        powerup = False
+        eaten_ghost = [False, False, False, False]
+    if startup_counter < 180: # Wait 3 seonds before it start
+        moving = False
+        startup_counter += 1
+    else:
+        moving = True
+
 
     screen.fill('black')
     draw_board(level)
     draw_player()
+    draw_score()
     center_x = player_x + 23
     center_y = player_y + 24
     turns_allowed = check_position(center_x, center_y)
-    player_x, player_y = move_player(player_x, player_y)
-    score = check_collisions(score)
-    draw_score()
+    if moving:
+        player_x, player_y = move_player(player_x, player_y)
+    score, powerup, power_counter, eaten_ghost = check_collisions(score, powerup, power_counter, eaten_ghost)
+    
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
