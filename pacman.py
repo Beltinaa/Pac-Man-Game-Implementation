@@ -105,7 +105,7 @@ GHOST_HOME_ARRIVAL_RADIUS = 20  # pixels; "close enough" to its corner to stop w
 # ghost contact (see lose_a_life(), used by both).
 # ---------------------------------------------------------------------------
 TOTAL_LEVELS = 5
-LEVEL_TIME_LIMIT_SECONDS = 90
+LEVEL_TIME_LIMIT_SECONDS = 150
 LEVEL_TIME_LIMIT_FRAMES = LEVEL_TIME_LIMIT_SECONDS * fps
 
 current_level = 1
