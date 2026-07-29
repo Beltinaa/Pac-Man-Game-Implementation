@@ -93,7 +93,7 @@ def save_highscore(name, score_value):
 # pocket logic), waits there for GHOST_RESPAWN_DELAY_SECONDS, then walks
 # back to its own corner before resuming chase/flee.
 # ---------------------------------------------------------------------------
-GHOST_RESPAWN_DELAY_SECONDS = 7
+GHOST_RESPAWN_DELAY_SECONDS = 1
 GHOST_RESPAWN_DELAY_FRAMES = GHOST_RESPAWN_DELAY_SECONDS * fps
 GHOST_HOME_ARRIVAL_RADIUS = 20  # pixels; "close enough" to its corner to stop walking home
 

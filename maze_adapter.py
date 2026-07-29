@@ -192,29 +192,26 @@ def _carve_ghost_pocket(board, pocket):
     The interior cells are guaranteed open by construction (they're the
     glyph's own background column), but the pocket's *boundary* is not:
     the generator's random maze decides, seed by seed, whether the wall
-    segments flanking that column are open or closed, since nothing in
+    segments around it are open or closed, since nothing in
     _add_42_to_maze forces them shut (only cells directly touching an
-    actual digit stroke get a forced wall). Left unchecked, roughly half
-    of random seeds leave a stray opening on the left, right, or bottom
-    flank that bypasses the single gate entirely (verified empirically,
-    not just in theory) -- so explicitly wall all three here, with the
-    gate as the only deliberate exception anywhere on the boundary. Must
-    run after _carve_tunnel: the tunnel row runs straight through the
-    pocket's row range and force-opens every column across it (needed
-    for the wraparound at the far left/right edges, nowhere near this
-    pocket), which would otherwise wipe these flank walls right back
-    open again.
+    actual digit stroke get a forced wall). Must run after _carve_tunnel:
+    the tunnel row runs straight through the pocket's row range and
+    force-opens every column across it (needed for the wraparound at the
+    far left/right edges, nowhere near this pocket), which would
+    otherwise wipe any flank wall added here right back open again.
+
+    Deliberate design choice: only the bottom flank and the gate row are
+    force-walled below. The left/right flanks are intentionally left as
+    the generator produced them, so the area beside the "4" and "2" reads
+    as more open -- on many seeds this does mean the pocket can be
+    entered/exited from the side as well as through the gate, not just
+    the gate alone. If that ever needs to change back to a fully sealed
+    box (single-entrance guarantee on every seed), reintroduce a left/
+    right flank seal the same shape as the bottom one below.
     """
     for r in range(pocket.row_start, pocket.row_end + 1):
         for c in range(pocket.col_start, pocket.col_end + 1):
             board[r][c] = EMPTY
-
-    left, right = pocket.col_start - 1, pocket.col_end + 1
-    for r in range(pocket.row_start, pocket.row_end + 1):
-        if 0 <= left < BOARD_COLS and board[r][left] < WALL_V:
-            board[r][left] = WALL_V
-        if 0 <= right < BOARD_COLS and board[r][right] < WALL_V:
-            board[r][right] = WALL_V
 
     bottom = pocket.row_end + 1
     if bottom < BOARD_ROWS:
@@ -264,6 +261,27 @@ def _carve_tunnel(board):
     for c in range(BOARD_COLS):
         if board[_TUNNEL_ROW][c] >= WALL_V:
             board[_TUNNEL_ROW][c] = EMPTY
+
+
+def _carve_perimeter_ring(board):
+    """Force open a continuous, one-tile-wide loop just inside the sealed
+    outer border, connecting all 4 corners in an unbroken ring -- like
+    classic hand-designed Pac-Man's outer ring corridor. The generator's
+    random maze doesn't guarantee this on its own (the wall pattern one
+    tile in from the edge is just whatever it happened to carve), so
+    without this a path running along the edge can dead-end partway."""
+    top, bottom = 1, BOARD_ROWS - 2
+    left, right = 1, BOARD_COLS - 2
+    for c in range(left, right + 1):
+        if board[top][c] >= WALL_V:
+            board[top][c] = DOT
+        if board[bottom][c] >= WALL_V:
+            board[bottom][c] = DOT
+    for r in range(top, bottom + 1):
+        if board[r][left] >= WALL_V:
+            board[r][left] = DOT
+        if board[r][right] >= WALL_V:
+            board[r][right] = DOT
 
 
 def _place_power_pellets(board):
@@ -327,6 +345,7 @@ def generate_board(seed: int = 0):
     _validate_ghost_pocket(board, ghost_pocket)
     _seal_outer_border(board)
     _carve_tunnel(board)
+    _carve_perimeter_ring(board)
     _carve_ghost_pocket(board, ghost_pocket)
     _place_power_pellets(board)
 
