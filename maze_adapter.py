@@ -200,24 +200,22 @@ def _carve_ghost_pocket(board, pocket):
     far left/right edges, nowhere near this pocket), which would
     otherwise wipe any flank wall added here right back open again.
 
-    Deliberate design choice: only the bottom flank and the gate row are
-    force-walled below. The left/right flanks are intentionally left as
-    the generator produced them, so the area beside the "4" and "2" reads
-    as more open -- on many seeds this does mean the pocket can be
-    entered/exited from the side as well as through the gate, not just
-    the gate alone. If that ever needs to change back to a fully sealed
-    box (single-entrance guarantee on every seed), reintroduce a left/
-    right flank seal the same shape as the bottom one below.
+    Deliberate design choice: only the gate row is force-walled below
+    (so there's exactly one gate tile, not two gaps side by side at the
+    top). The left/right/bottom flanks are intentionally left as the
+    generator produced them, so the area around the "4" and "2" reads as
+    more open -- on many seeds this does mean the pocket can be entered/
+    exited from the sides or bottom as well as through the gate, not
+    just the gate alone. If that ever needs to change back to a fully
+    sealed box (single-entrance guarantee on every seed), wall the left/
+    right flanks (pocket.col_start - 1 / pocket.col_end + 1, every row
+    from row_start to row_end) and the row at pocket.row_end + 1 (every
+    column from col_start to col_end) the same way the gate row below
+    does.
     """
     for r in range(pocket.row_start, pocket.row_end + 1):
         for c in range(pocket.col_start, pocket.col_end + 1):
             board[r][c] = EMPTY
-
-    bottom = pocket.row_end + 1
-    if bottom < BOARD_ROWS:
-        for c in range(pocket.col_start, pocket.col_end + 1):
-            if board[bottom][c] < WALL_V:
-                board[bottom][c] = WALL_V
 
     for c in range(pocket.col_start, pocket.col_end + 1):
         if c == pocket.gate_col:
