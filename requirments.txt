@@ -1,0 +1,5 @@
+# Assigned "A-Maze-ing" generator package (used as-is, unmodified).
+# Install with:  pip install mazegenerator-2.1.0-py3-none-any.whl
+# or, once published:  pip install mazegenerator==2.1.0
+pygame
+mazegenerator==2.1.0
