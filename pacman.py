@@ -120,7 +120,7 @@ def prepare_level(seed):
     board the way the original one-time setup was."""
     global level, ghost_pocket, level_time_remaining
     global SPAWN_PLAYER, SPAWN_BLINKY, SPAWN_INKY, SPAWN_PINKY, SPAWN_CLYDE
-    global BOX_X0, BOX_X1, BOX_Y0, BOX_Y1, BOX_USE_CENTER, EXIT_TARGET
+    global BOX_X0, BOX_X1, BOX_Y0, BOX_Y1, BOX_USE_CENTER, EXIT_TARGET, EXIT_TILE
 
     board_grid, ghost_pocket = load_level(seed)
     level = copy.deepcopy(board_grid)
@@ -233,6 +233,13 @@ def prepare_level(seed):
         BOX_Y0, BOX_Y1 = 370, 480
         BOX_USE_CENTER = False
         EXIT_TARGET = (400, 100)
+
+    # tile version of the box's center, for eyes' BFS path home (see
+    # _ghost_target/_sticky_bfs_target): a fixed pixel target alone can
+    # leave a greedy mover committed to the wrong direction for the length
+    # of a long corridor, same class of issue chase/going-home already
+    # solve with a BFS waypoint that's recomputed on real progress.
+    EXIT_TILE = ((BOX_Y0 + BOX_Y1) // 2 // num1, (BOX_X0 + BOX_X1) // 2 // num2)
 
     level_time_remaining = LEVEL_TIME_LIMIT_FRAMES
 
@@ -954,19 +961,22 @@ def _sticky_bfs_target(ghost_id, ghost, goal_tile):
 
 def _ghost_target(ghost_id, ghost, dead, going_home, eaten_this_combo, spawn):
     """One ghost's target for next frame, per the state it's in right now:
-      1) eaten (eyes)      -> the ghost-house pocket (EXIT_TARGET)
+      1) eaten (eyes)      -> BFS shortest path to the ghost-house pocket
       2) walking home      -> BFS shortest path back to its own spawn corner
       3) edible & not yet eaten this combo -> flee: step to whichever of
          its own passable neighbor tiles is farthest from the player
       4) otherwise (normal, or revived-but-still-dangerous mid-powerup)
          -> chase: BFS shortest path to the player's current tile
-    Chase/going-home both use the sticky BFS waypoint above. Flee is a
-    plain 1-step lookahead recomputed fresh every frame -- it never asks
-    the mover to reverse mid-corridor, so it doesn't need stickiness.
+    Eaten/going-home/chase all use the sticky BFS waypoint above -- a
+    plain fixed pixel target (the pocket, a far-off corner) can leave the
+    greedy mover committed the wrong way for the length of a whole
+    corridor with nothing to make it reconsider until it hits a wall.
+    Flee is a plain 1-step lookahead recomputed fresh every frame -- it
+    never asks the mover to reverse mid-corridor, so it doesn't need
+    stickiness.
     """
     if dead:
-        ghost_waypoints[ghost_id] = None
-        return EXIT_TARGET
+        return _sticky_bfs_target(ghost_id, ghost, EXIT_TILE)
 
     if going_home:
         spawn_tile = _tile_of(spawn[0], spawn[1])
