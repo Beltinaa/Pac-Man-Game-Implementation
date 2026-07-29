@@ -261,25 +261,32 @@ def _carve_tunnel(board):
             board[_TUNNEL_ROW][c] = EMPTY
 
 
-def _carve_perimeter_ring(board):
-    """Force open a continuous, one-tile-wide loop just inside the sealed
-    outer border, connecting all 4 corners in an unbroken ring -- like
-    classic hand-designed Pac-Man's outer ring corridor. The generator's
-    random maze doesn't guarantee this on its own (the wall pattern one
-    tile in from the edge is just whatever it happened to carve), so
+PERIMETER_RING_THICKNESS = 1  # tiles wide; classic Pac-Man's own outer ring is 1
+
+
+def _carve_perimeter_ring(board, thickness=PERIMETER_RING_THICKNESS):
+    """Force open a continuous loop, `thickness` tiles wide, just inside
+    the sealed outer border, connecting all 4 corners in an unbroken
+    ring -- like classic hand-designed Pac-Man's outer ring corridor,
+    just wider and more visually obvious as a distinct path (built from
+    `thickness` concentric single-tile loops, each one tile further in
+    than the last, which together cover every tile of the band). The
+    generator's random maze doesn't guarantee this on its own (the wall
+    pattern near the edge is just whatever it happened to carve), so
     without this a path running along the edge can dead-end partway."""
-    top, bottom = 1, BOARD_ROWS - 2
-    left, right = 1, BOARD_COLS - 2
-    for c in range(left, right + 1):
-        if board[top][c] >= WALL_V:
-            board[top][c] = DOT
-        if board[bottom][c] >= WALL_V:
-            board[bottom][c] = DOT
-    for r in range(top, bottom + 1):
-        if board[r][left] >= WALL_V:
-            board[r][left] = DOT
-        if board[r][right] >= WALL_V:
-            board[r][right] = DOT
+    def open_cell(r, c):
+        if 0 <= r < BOARD_ROWS and 0 <= c < BOARD_COLS and board[r][c] >= WALL_V:
+            board[r][c] = DOT
+
+    for t in range(thickness):
+        top, bottom = 1 + t, BOARD_ROWS - 2 - t
+        left, right = 1 + t, BOARD_COLS - 2 - t
+        for c in range(left, right + 1):
+            open_cell(top, c)
+            open_cell(bottom, c)
+        for r in range(top, bottom + 1):
+            open_cell(r, left)
+            open_cell(r, right)
 
 
 def _place_power_pellets(board):

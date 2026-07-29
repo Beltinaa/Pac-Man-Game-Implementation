@@ -21,11 +21,15 @@
   },
   {
     "name": "PLAYER",
+    "score": 690
+  },
+  {
+    "name": "PLAYER",
     "score": 560
   },
   {
     "name": "PLAYER",
-    "score": 30
+    "score": 100
   },
   {
     "name": "PLAYER",
@@ -33,10 +37,6 @@
   },
   {
     "name": "PLAYER",
-    "score": 30
-  },
-  {
-    "name": "ALBJAN",
     "score": 30
   }
 ]
