@@ -126,3 +126,9 @@ python -c "from mazegenerator import MazeGenerator; print('OK')"
 
 - `highscores.json` persists the Top 10 scores across runs — don't
   delete it if you want to keep your scores.
+
+
+## CHEAT MODE COMMANDS
+
+F1- EXTRA LIVES
+F2- SKIP LEVEL

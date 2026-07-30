@@ -46,6 +46,11 @@ STARTING_LIVES = 3
 HIGHSCORES_FILE = 'highscores.json'
 MAX_HIGHSCORES = 10
 NAME_INPUT_MAX_LEN = 12
+# ---------------------------------------------------------------------------
+#cheat mode
+CHEATS_ENABLED = True
+cheat_invincible = False
+cheat_ghosts_frozen =   False
 
 
 def load_highscores():
@@ -373,6 +378,8 @@ def lose_a_life():
     spec: respawn centered, ghosts back to their corners, score and the
     level's remaining pacgums untouched; all lives gone ends the game."""
     global lives, game_over, moving, level_time_remaining
+    if cheat_invincible:
+        return
     if lives > 0:
         lives -= 1
         reset_positions_to_spawn()
@@ -1041,6 +1048,7 @@ while run:
                         run = False
         screen.fill('black')
         draw_menu()
+        
 
     elif game_state == STATE_INSTRUCTIONS:
         for event in events:
@@ -1229,6 +1237,15 @@ while run:
                     direction_command = 2
                 if event.key in (pygame.K_DOWN, pygame.K_s):
                     direction_command = 3
+
+                if CHEATS_ENABLED:
+                    if event.key == pygame.K_F1:
+                        lives += 1
+                    if event.key == pygame.K_F2:
+                        for row in level:
+                            for i in range(len(row)):
+                                if row[i] in (1, 2):
+                                    row[i] = 0
 
             if event.type == pygame.KEYUP:
                 if event.key in (pygame.K_RIGHT, pygame.K_d) and direction_command == 0:
