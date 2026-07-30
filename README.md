@@ -35,7 +35,7 @@ python3 --version                 # confirm it's 3.10+ before continuing
 python3 -m venv venv
 source venv/bin/activate          # venv\Scripts\activate on Windows
 
-python --version                  # sanity check: should match python3 above
+python --version                  
 pip install --upgrade pip
 pip install pygame
 pip install ./mazegenerator-2.1.0-py3-none-any.whl

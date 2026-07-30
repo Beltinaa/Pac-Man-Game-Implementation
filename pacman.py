@@ -104,8 +104,8 @@ GHOST_HOME_ARRIVAL_RADIUS = 20  # pixels; "close enough" to its corner to stop w
 # level also has a time limit -- running out costs a life, exactly like
 # ghost contact (see lose_a_life(), used by both).
 # ---------------------------------------------------------------------------
-TOTAL_LEVELS = 5
-LEVEL_TIME_LIMIT_SECONDS = 150
+TOTAL_LEVELS = 10
+LEVEL_TIME_LIMIT_SECONDS = 250
 LEVEL_TIME_LIMIT_FRAMES = LEVEL_TIME_LIMIT_SECONDS * fps
 
 current_level = 1
@@ -286,7 +286,7 @@ def reset_positions_to_spawn():
     targets = [(player_x, player_y)] * 4
     ghost_waypoints = [None, None, None, None]
 
-
+ 
 def _tile_of(x_pos, y_pos):
     """Tile (row, col) a ghost/player pixel top-left position sits in,
     using the same +22 center offset the Ghost class already uses."""
@@ -433,7 +433,7 @@ inky_box = False
 clyde_box = False
 pinky_box = False
 moving = False
-ghost_speeds = [2, 2, 2, 2]
+ghost_speeds = [1, 1, 1, 1]
 startup_counter = 0
 lives = STARTING_LIVES
 game_over = False
@@ -1135,15 +1135,15 @@ while run:
         if powerup:
             ghost_speeds = [1, 1, 1, 1]
         else:
-            ghost_speeds = [2, 2, 2, 2]
+            ghost_speeds = [1, 1, 1, 1]
         if eaten_ghost[0]:
-            ghost_speeds[0] = 2
+            ghost_speeds[0] = 1
         if eaten_ghost[1]:
-            ghost_speeds[1] = 2
+            ghost_speeds[1] = 1
         if eaten_ghost[2]:
-            ghost_speeds[2] = 2
+            ghost_speeds[2] = 1
         if eaten_ghost[3]:
-            ghost_speeds[3] = 2
+            ghost_speeds[3] = 1
         if blinky_dead:
             ghost_speeds[0] = 4
         if inky_dead:
