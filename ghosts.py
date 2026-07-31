@@ -58,22 +58,14 @@ def bfs_next_tile(start_tile, goal_tile):
     return step
 
 
-def update_ghost_respawn(dead, in_box, timer, going_home, x_pos, y_pos, spawn):
-    """Advance one ghost's eaten -> waiting -> walking-home state machine."""
-    if dead and in_box:
-        timer += 1
-        if timer >= GHOST_RESPAWN_DELAY_FRAMES:
+def update_ghost_respawn(dead, in_box, timer, going_home,
+                         x_pos, y_pos, spawn):
+    if dead:
+        if (abs(x_pos - spawn[0]) < GHOST_HOME_ARRIVAL_RADIUS and
+                abs(y_pos - spawn[1]) < GHOST_HOME_ARRIVAL_RADIUS):
             dead = False
-            going_home = True
-            timer = 0
-    else:
-        timer = 0
-    if going_home:
-        if (abs(x_pos - spawn[0]) < GHOST_HOME_ARRIVAL_RADIUS
-                and abs(y_pos - spawn[1]) < GHOST_HOME_ARRIVAL_RADIUS):
-            going_home = False
-    return dead, timer, going_home
 
+    return dead, 0, False
 
 class Ghost:
     def __init__(self, x_coord, y_coord, target, speed, img, direct, dead, box, ghost_id):
@@ -333,10 +325,9 @@ def sticky_bfs_target(ghost_id, ghost, goal_tile):
 
 def ghost_target(ghost_id, ghost, dead, going_home, eaten_this_combo, spawn):
     """One ghost's target for the next frame."""
-    if dead:
-        return sticky_bfs_target(ghost_id, ghost, state.EXIT_TILE)
 
-    if going_home:
+    # Dead ghosts immediately head to their own spawn corner
+    if dead or going_home:
         spawn_tile = tile_of(spawn[0], spawn[1])
         return sticky_bfs_target(ghost_id, ghost, spawn_tile)
 
@@ -345,22 +336,25 @@ def ghost_target(ghost_id, ghost, dead, going_home, eaten_this_combo, spawn):
         ghost_tile = tile_of(ghost.x_pos, ghost.y_pos)
         neighbor_offsets = ((0, 1), (0, -1), (-1, 0), (1, 0))
         player_tile = tile_of(state.player_x, state.player_y)
+
         candidates = [
             (ghost_tile[0] + dr, ghost_tile[1] + dc)
             for i, (dr, dc) in enumerate(neighbor_offsets)
             if ghost.turns[i]
         ]
+
         if not candidates:
             return ghost.x_pos, ghost.y_pos
+
         farthest = max(
             candidates,
-            key=lambda t: (t[0] - player_tile[0]) ** 2 + (t[1] - player_tile[1]) ** 2,
+            key=lambda t: (t[0] - player_tile[0]) ** 2
+                         + (t[1] - player_tile[1]) ** 2,
         )
         return pixel_center_of(*farthest)
 
     player_tile = tile_of(state.player_x, state.player_y)
     return sticky_bfs_target(ghost_id, ghost, player_tile)
-
 
 def get_targets(blinky, inky, pinky, clyde):
     return [

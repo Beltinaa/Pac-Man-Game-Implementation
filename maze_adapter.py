@@ -325,20 +325,44 @@ def _thin_pacgums(board):
             if board[r][c] == DOT and (r + c) % 2:
                 board[r][c] = EMPTY
 
+from collections import deque
 
 def _place_power_pellets(board):
-    """Drop a power pellet near each of the 4 corners, mirroring the
-    original hand-made board's layout, on whichever nearby tile is open."""
-    corners = [(2, 2, 1, 1), (2, BOARD_COLS - 3, 1, -1),
-               (BOARD_ROWS - 3, 2, -1, 1), (BOARD_ROWS - 3, BOARD_COLS - 3, -1, -1)]
-    for r0, c0, dr, dc in corners:
-        r, c = r0, c0
-        for _ in range(6):
-            if 0 <= r < BOARD_ROWS and 0 <= c < BOARD_COLS and board[r][c] == DOT:
+    """Place one power pellet near each corner."""
+
+    starts = [
+        (2, 2),
+        (2, BOARD_COLS - 3),
+        (BOARD_ROWS - 3, 2),
+        (BOARD_ROWS - 3, BOARD_COLS - 3),
+    ]
+
+    for start_r, start_c in starts:
+        visited = {(start_r, start_c)}
+        queue = deque([(start_r, start_c)])
+
+        while queue:
+            r, c = queue.popleft()
+
+            if (
+                0 <= r < BOARD_ROWS
+                and 0 <= c < BOARD_COLS
+                and board[r][c] == DOT
+            ):
                 board[r][c] = POWER
                 break
-            r, c = r + dr, c + dc
 
+            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                nr = r + dr
+                nc = c + dc
+
+                if (
+                    0 <= nr < BOARD_ROWS
+                    and 0 <= nc < BOARD_COLS
+                    and (nr, nc) not in visited
+                ):
+                    visited.add((nr, nc))
+                    queue.append((nr, nc))
 
 def generate_board(seed: int = 0):
     """Build a full Pac-Man tile grid using the assigned MazeGenerator
