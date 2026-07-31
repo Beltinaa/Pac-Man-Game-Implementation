@@ -70,6 +70,7 @@ startup_counter = 0
 # Cheats
 cheat_invincible = False
 cheat_ghosts_frozen = False
+cheat_speed_boost = False
 
 # UI / menu
 game_state = STATE_MENU

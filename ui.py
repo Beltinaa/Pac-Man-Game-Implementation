@@ -1,7 +1,7 @@
 import pygame
 
 from assets import PI, color, font, player_images, screen, title_font
-from config import FPS, HEIGHT, NAME_INPUT_MAX_LEN, TOTAL_LEVELS, WIDTH
+from config import CHEATS_ENABLED, FPS, HEIGHT, NAME_INPUT_MAX_LEN, TOTAL_LEVELS, WIDTH
 from highscores import load_highscores
 import state
 
@@ -24,6 +24,27 @@ def draw_misc():
             pygame.transform.scale(player_images[0], (30, 30)),
             (650 + i * 40, 915),
         )
+    draw_cheat_indicator()
+
+
+def draw_cheat_indicator():
+    if not CHEATS_ENABLED:
+        return
+
+    active_cheats = []
+    if state.cheat_invincible:
+        active_cheats.append(('INVINCIBLE', 'cyan'))
+    if state.cheat_ghosts_frozen:
+        active_cheats.append(('FROZEN', 'orange'))
+    if state.cheat_speed_boost:
+        active_cheats.append(('SPEED BOOST', 'lime'))
+
+    if not active_cheats:
+        return
+
+    for index, (label, color) in enumerate(active_cheats):
+        text = font.render(label, True, color)
+        screen.blit(text, text.get_rect(topright=(WIDTH - 20, 20 + index * 28)))
 
 
 def draw_menu():
@@ -45,19 +66,33 @@ def draw_instructions():
     lines = [
         'HOW TO PLAY',
         '',
-        'Move: Arrow Keys',
+        'Move: Arrow Keys or WASD',
         'Eat every pacgum and super-pacgum to clear a level.',
         'A super-pacgum makes the ghosts edible for a short time --',
         'eat them for bonus points before it wears off.',
         'Touching a non-edible ghost costs you a life.',
         '',
-        'Pause: ESC',
+        'Pause: ESC or P',
         '',
         'Press ESC or ENTER to return to the menu',
     ]
     for i, line in enumerate(lines):
         text = font.render(line, True, 'white')
         screen.blit(text, text.get_rect(center=(WIDTH // 2, 180 + i * 40)))
+
+    if CHEATS_ENABLED:
+        cheat_title = font.render('Debug / Cheat Mode:', True, 'gray')
+        screen.blit(cheat_title, cheat_title.get_rect(center=(WIDTH // 2, 180 + len(lines) * 40 + 20)))
+        cheat_lines = [
+            'F1: +1 life',
+            'F2: clear all pacgums',
+            'F3: toggle invincibility',
+            'F4: toggle ghost freeze',
+            'F5: toggle speed boost',
+        ]
+        for i, line in enumerate(cheat_lines):
+            text = font.render(line, True, 'gray')
+            screen.blit(text, text.get_rect(center=(WIDTH // 2, 180 + len(lines) * 40 + 60 + i * 28)))
 
 
 def draw_highscores_screen():

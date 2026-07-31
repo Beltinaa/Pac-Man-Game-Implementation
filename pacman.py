@@ -14,6 +14,8 @@ from config import (
     GHOST_EAT_BASE_SCORE,
     NAME_INPUT_MAX_LEN,
     PAUSE_KEY,
+    PLAYER_SPEED_BOOSTED,
+    PLAYER_SPEED_NORMAL,
     STATE_GAME_OVER,
     STATE_HIGHSCORES,
     STATE_INSTRUCTIONS,
@@ -176,26 +178,28 @@ while run:
         draw_board()
         center_x = state.player_x + 23
         center_y = state.player_y + 24
-        if state.powerup:
-            state.ghost_speeds = [1, 1, 1, 1]
+        if state.cheat_ghosts_frozen:
+            # Freeze is absolute while active, so even ghosts that are returning
+            # to base or have been marked dead still stay motionless.
+            state.ghost_speeds = [0, 0, 0, 0]
         else:
             state.ghost_speeds = [1, 1, 1, 1]
-        if state.eaten_ghost[0]:
-            state.ghost_speeds[0] = 1
-        if state.eaten_ghost[1]:
-            state.ghost_speeds[1] = 1
-        if state.eaten_ghost[2]:
-            state.ghost_speeds[2] = 1
-        if state.eaten_ghost[3]:
-            state.ghost_speeds[3] = 1
-        if state.blinky_dead:
-            state.ghost_speeds[0] = 4
-        if state.inky_dead:
-            state.ghost_speeds[1] = 4
-        if state.pinky_dead:
-            state.ghost_speeds[2] = 4
-        if state.clyde_dead:
-            state.ghost_speeds[3] = 4
+            if state.eaten_ghost[0]:
+                state.ghost_speeds[0] = 1
+            if state.eaten_ghost[1]:
+                state.ghost_speeds[1] = 1
+            if state.eaten_ghost[2]:
+                state.ghost_speeds[2] = 1
+            if state.eaten_ghost[3]:
+                state.ghost_speeds[3] = 1
+            if state.blinky_dead:
+                state.ghost_speeds[0] = 4
+            if state.inky_dead:
+                state.ghost_speeds[1] = 4
+            if state.pinky_dead:
+                state.ghost_speeds[2] = 4
+            if state.clyde_dead:
+                state.ghost_speeds[3] = 4
 
         level_cleared = True
         for i in range(len(state.level)):
@@ -227,6 +231,7 @@ while run:
 
         state.turns_allowed = check_position(center_x, center_y)
         if state.moving:
+            state.player_speed = PLAYER_SPEED_BOOSTED if state.cheat_speed_boost else PLAYER_SPEED_NORMAL
             state.player_x, state.player_y = move_player(state.player_x, state.player_y)
             if not (state.blinky_dead and blinky.in_box):
                 state.blinky_x, state.blinky_y, state.blinky_direction = blinky.move_toward_target()
@@ -285,6 +290,12 @@ while run:
                             for i in range(len(row)):
                                 if row[i] in (1, 2):
                                     row[i] = 0
+                    if event.key == pygame.K_F3:
+                        state.cheat_invincible = not state.cheat_invincible
+                    if event.key == pygame.K_F4:
+                        state.cheat_ghosts_frozen = not state.cheat_ghosts_frozen
+                    if event.key == pygame.K_F5:
+                        state.cheat_speed_boost = not state.cheat_speed_boost
 
         if state.direction_command == 0 and state.turns_allowed[0]:
             state.direction = 0
