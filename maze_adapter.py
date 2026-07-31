@@ -255,9 +255,28 @@ def _seal_outer_border(board):
 
 def _carve_tunnel(board):
     """Guarantee a left/right wrap-around row, since pacman.py's player
-    wraparound (`player_x > 900` / `< -50`) needs at least one open edge."""
+    wraparound (`player_x > 900` / `< -50`) needs at least one open edge.
+
+    SOLID tiles are skipped: the tunnel row runs straight through the middle
+    of the generator's centered "42", and opening it there would cut a
+    walkable lane clean through the logo. The wraparound only needs the two
+    ends of the row open, not an uninterrupted corridor between them, so the
+    logo stays solid and the row simply stops at it. Tiles that merely touch
+    a SOLID one are skipped too: those are the logo's own surrounding walls,
+    and opening them would let the player walk along the row right between
+    the digits."""
+    def touches_logo(c):
+        if board[_TUNNEL_ROW][c] == SOLID:
+            return True
+        for r2, c2 in ((_TUNNEL_ROW - 1, c), (_TUNNEL_ROW + 1, c),
+                       (_TUNNEL_ROW, c - 1), (_TUNNEL_ROW, c + 1)):
+            if (0 <= r2 < BOARD_ROWS and 0 <= c2 < BOARD_COLS
+                    and board[r2][c2] == SOLID):
+                return True
+        return False
+
     for c in range(BOARD_COLS):
-        if board[_TUNNEL_ROW][c] >= WALL_V:
+        if board[_TUNNEL_ROW][c] >= WALL_V and not touches_logo(c):
             board[_TUNNEL_ROW][c] = EMPTY
 
 
@@ -275,7 +294,8 @@ def _carve_perimeter_ring(board, thickness=PERIMETER_RING_THICKNESS):
     pattern near the edge is just whatever it happened to carve), so
     without this a path running along the edge can dead-end partway."""
     def open_cell(r, c):
-        if 0 <= r < BOARD_ROWS and 0 <= c < BOARD_COLS and board[r][c] >= WALL_V:
+        if (0 <= r < BOARD_ROWS and 0 <= c < BOARD_COLS
+                and board[r][c] >= WALL_V and board[r][c] != SOLID):
             board[r][c] = DOT
 
     for t in range(thickness):
@@ -287,6 +307,23 @@ def _carve_perimeter_ring(board, thickness=PERIMETER_RING_THICKNESS):
         for r in range(top, bottom + 1):
             open_cell(r, left)
             open_cell(r, right)
+
+
+def _thin_pacgums(board):
+    """Space the pacgums one maze cell apart, like the original game.
+
+    Every open tile starts out holding one, but a maze cell is two tiles
+    wide here, so that puts a pacgum on each cell *and* on each opening
+    between two cells -- twice the density the original board has. Keeping
+    only the tiles where (row + col) is even drops every other one along any
+    corridor, which leaves exactly the cell centres (both coordinates even)
+    plus the same 2-tile spacing on the odd lanes such as the perimeter
+    ring. Only existing pacgums are removed, never added, so the ghost
+    house and the tunnel row stay empty."""
+    for r in range(BOARD_ROWS):
+        for c in range(BOARD_COLS):
+            if board[r][c] == DOT and (r + c) % 2:
+                board[r][c] = EMPTY
 
 
 def _place_power_pellets(board):
@@ -352,6 +389,7 @@ def generate_board(seed: int = 0):
     _carve_tunnel(board)
     _carve_perimeter_ring(board)
     _carve_ghost_pocket(board, ghost_pocket)
+    _thin_pacgums(board)
     _place_power_pellets(board)
 
     # pad one extra wall row so the shape exactly matches the 30x33 grid the

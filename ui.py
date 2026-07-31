@@ -1,9 +1,10 @@
 import pygame
 
-from assets import PI, color, font, player_images, screen, title_font
+from assets import font, player_images, screen, title_font
 from config import CHEATS_ENABLED, FPS, HEIGHT, NAME_INPUT_MAX_LEN, TOTAL_LEVELS, WIDTH
 from highscores import load_highscores
 import state
+from walls import render_wall_layer
 
 
 def draw_misc():
@@ -154,9 +155,28 @@ def draw_victory_screen():
     )
 
 
+# --- board ------------------------------------------------------------------
+# The maze itself is drawn by walls.py in the classic arcade style (hollow
+# blue tubes rather than filled bars). It only depends on the wall tiles,
+# which never change during a level, so the whole layer is rendered once and
+# cached; only the pacgums are redrawn each frame. The cache is keyed on the
+# level grid object itself, so prepare_level()'s fresh copy rebuilds it.
+_wall_layer = None
+_wall_layer_level = None
+
+
+def _wall_layer_for(level, tile_w, tile_h):
+    global _wall_layer, _wall_layer_level
+    if _wall_layer is None or _wall_layer_level is not level:
+        _wall_layer = render_wall_layer(level, WIDTH, HEIGHT, tile_w, tile_h)
+        _wall_layer_level = level
+    return _wall_layer
+
+
 def draw_board():
     num1 = (HEIGHT - 50) // 32
     num2 = WIDTH // 30
+    screen.blit(_wall_layer_for(state.level, num2, num1), (0, 0))
     for i in range(len(state.level)):
         for j in range(len(state.level[i])):
             if state.level[i][j] == 1:
@@ -169,50 +189,6 @@ def draw_board():
                     screen, 'white',
                     (j * num2 + (0.5 * num2), i * num1 + (0.5 * num1)), 10,
                 )
-            if state.level[i][j] == 3:
-                pygame.draw.line(
-                    screen, color,
-                    (j * num2 + (0.5 * num2), i * num1),
-                    (j * num2 + (0.5 * num2), i * num1 + num1), 3,
-                )
-            if state.level[i][j] == 4:
-                pygame.draw.line(
-                    screen, color,
-                    (j * num2, i * num1 + (0.5 * num1)),
-                    (j * num2 + num2, i * num1 + (0.5 * num1)), 3,
-                )
-            if state.level[i][j] == 5:
-                pygame.draw.arc(
-                    screen, color,
-                    [(j * num2 - (num2 * 0.4)) - 2, (i * num1 + (0.5 * num1)), num2, num1],
-                    0, PI / 2, 3,
-                )
-            if state.level[i][j] == 6:
-                pygame.draw.arc(
-                    screen, color,
-                    [(j * num2 + (num2 * 0.5)), (i * num1 + (0.5 * num1)), num2, num1],
-                    PI / 2, PI, 3,
-                )
-            if state.level[i][j] == 7:
-                pygame.draw.arc(
-                    screen, color,
-                    [(j * num2 + (num2 * 0.5)), (i * num1 - (0.4 * num1)), num2, num1],
-                    PI, 3 * PI / 2, 3,
-                )
-            if state.level[i][j] == 8:
-                pygame.draw.arc(
-                    screen, color,
-                    [(j * num2 - (num2 * 0.4)) - 2, (i * num1 - (0.4 * num1)), num2, num1],
-                    3 * PI / 2, 2 * PI, 3,
-                )
-            if state.level[i][j] == 9:
-                pygame.draw.line(
-                    screen, 'white',
-                    (j * num2, i * num1 + (0.5 * num1)),
-                    (j * num2 + num2, i * num1 + (0.5 * num1)), 3,
-                )
-            if state.level[i][j] == 10:
-                pygame.draw.rect(screen, color, [j * num2, i * num1, num2, num1])
 
 
 def draw_player():
