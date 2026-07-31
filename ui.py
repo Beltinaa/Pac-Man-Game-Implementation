@@ -64,8 +64,9 @@ def draw_menu():
 
 
 def draw_instructions():
+    title = title_font.render('HOW TO PLAY', True, 'yellow')
+    screen.blit(title, title.get_rect(center=(WIDTH // 2, 150)))
     lines = [
-        'HOW TO PLAY',
         '',
         'Move: Arrow Keys or WASD',
         'Eat every pacgum and super-pacgum to clear a level.',
@@ -82,7 +83,7 @@ def draw_instructions():
         screen.blit(text, text.get_rect(center=(WIDTH // 2, 180 + i * 40)))
 
     if CHEATS_ENABLED:
-        cheat_title = font.render('Debug / Cheat Mode:', True, 'gray')
+        cheat_title = font.render('some secret power moves ...', True, 'navy')
         screen.blit(cheat_title, cheat_title.get_rect(center=(WIDTH // 2, 180 + len(lines) * 40 + 20)))
         cheat_lines = [
             'F1: +1 life',
@@ -92,7 +93,7 @@ def draw_instructions():
             'F5: toggle speed boost',
         ]
         for i, line in enumerate(cheat_lines):
-            text = font.render(line, True, 'gray')
+            text = font.render(line, True, 'navy')
             screen.blit(text, text.get_rect(center=(WIDTH // 2, 180 + len(lines) * 40 + 60 + i * 28)))
 
 
