@@ -784,7 +784,7 @@ def draw_pause_overlay():
     screen.blit(overlay, (0, 0))
     text = title_font.render('PAUSED', True, 'yellow')
     screen.blit(text, text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 30)))
-    hint = font.render('ESC: Resume     M: Main Menu', True, 'white')
+    hint = font.render('R: Resume     M: Main Menu', True, 'white')
     screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 30)))
 
 
@@ -1020,6 +1020,21 @@ def get_targets():
     ]
 
 
+def update_direction_from_input():
+    global direction_command
+    pressed = pygame.key.get_pressed()
+    if pressed[pygame.K_RIGHT] or pressed[pygame.K_d]:
+        direction_command = 0
+    elif pressed[pygame.K_LEFT] or pressed[pygame.K_a]:
+        direction_command = 1
+    elif pressed[pygame.K_UP] or pressed[pygame.K_w]:
+        direction_command = 2
+    elif pressed[pygame.K_DOWN] or pressed[pygame.K_s]:
+        direction_command = 3
+    else:
+        direction_command = direction
+
+
 run = True
 while run:
     timer.tick(fps)
@@ -1067,7 +1082,7 @@ while run:
     elif game_state == STATE_PAUSED:
         for event in events:
             if event.type == pygame.KEYDOWN:
-                if event.key == PAUSE_KEY:
+                if event.key in (PAUSE_KEY, pygame.K_r):
                     game_state = STATE_PLAYING
                 elif event.key == pygame.K_m:
                     game_state = STATE_MENU
@@ -1225,18 +1240,12 @@ while run:
             eaten_ghost[3] = True
             score += (2 ** eaten_ghost.count(True)) * GHOST_EAT_BASE_SCORE
 
+        update_direction_from_input()
+
         for event in events:
             if event.type == pygame.KEYDOWN:
-                if event.key == PAUSE_KEY:
+                if event.key in (PAUSE_KEY, pygame.K_p):
                     game_state = STATE_PAUSED
-                if event.key in (pygame.K_RIGHT, pygame.K_d):
-                    direction_command = 0
-                if event.key in (pygame.K_LEFT, pygame.K_a):
-                    direction_command = 1
-                if event.key in (pygame.K_UP, pygame.K_w):
-                    direction_command = 2
-                if event.key in (pygame.K_DOWN, pygame.K_s):
-                    direction_command = 3
 
                 if CHEATS_ENABLED:
                     if event.key == pygame.K_F1:
@@ -1246,16 +1255,6 @@ while run:
                             for i in range(len(row)):
                                 if row[i] in (1, 2):
                                     row[i] = 0
-
-            if event.type == pygame.KEYUP:
-                if event.key in (pygame.K_RIGHT, pygame.K_d) and direction_command == 0:
-                    direction_command = direction
-                if event.key in (pygame.K_LEFT, pygame.K_a) and direction_command == 1:
-                    direction_command = direction
-                if event.key in (pygame.K_UP, pygame.K_w) and direction_command == 2:
-                    direction_command = direction
-                if event.key in (pygame.K_DOWN, pygame.K_s) and direction_command == 3:
-                    direction_command = direction
 
         if direction_command == 0 and turns_allowed[0]:
             direction = 0
