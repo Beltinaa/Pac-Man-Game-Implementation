@@ -216,20 +216,21 @@ def draw_board():
 
 
 def draw_player():
+    base_image = pygame.transform.scale(player_images[state.counter // 5], (36, 36))
     if state.direction == 0:
-        screen.blit(player_images[state.counter // 5], (state.player_x, state.player_y))
+        screen.blit(base_image, (state.player_x, state.player_y))
     elif state.direction == 1:
         screen.blit(
-            pygame.transform.flip(player_images[state.counter // 5], True, False),
+            pygame.transform.flip(base_image, True, False),
             (state.player_x, state.player_y),
         )
     elif state.direction == 2:
         screen.blit(
-            pygame.transform.rotate(player_images[state.counter // 5], 90),
+            pygame.transform.rotate(base_image, 90),
             (state.player_x, state.player_y),
         )
     elif state.direction == 3:
         screen.blit(
-            pygame.transform.rotate(player_images[state.counter // 5], 270),
+            pygame.transform.rotate(base_image, 270),
             (state.player_x, state.player_y),
         )
