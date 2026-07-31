@@ -2,46 +2,64 @@
 
 # Pac-Man Game Implementation
 
-A Python/Pygame implementation of the classic Pac-Man game featuring procedurally generated mazes, multiple game levels, autonomous ghost AI, score persistence, and a complete game state system.
+A Python/Pygame implementation of the classic **Pac-Man** game featuring procedurally generated mazes, multiple levels, autonomous ghost AI, persistent highscores, and a complete game state system.
+
+The project combines the classic Pac-Man gameplay with dynamically generated mazes using the assigned **A-Maze-ing** package while maintaining the original mechanics of collecting pellets, avoiding ghosts, and progressing through increasingly challenging levels.
 
 ---
 
 # Description
 
-This project recreates the classic Pac-Man gameplay while extending it with dynamically generated mazes using the assigned **A-Maze-ing** package.
+This project recreates the classic Pac-Man experience while extending it with procedural maze generation.
 
-The objective is to collect all pellets while avoiding ghosts. As the player progresses through levels, new mazes are generated, increasing replayability while preserving the original Pac-Man experience.
+The objective of the game is to guide Pac-Man through each maze, collect every pellet, avoid ghosts, and advance through progressively generated levels. The first level uses a deterministic maze generated from a fixed seed to ensure reproducibility, while every subsequent level generates a new maze to increase replayability.
 
-Main features include:
+The project demonstrates object-oriented programming, event-driven game development with Pygame, procedural content generation, persistent data storage, and modular software design.
 
-- Procedurally generated mazes
-- Multiple game levels
-- Autonomous ghost AI
-- Power pellets and frightened mode
-- Persistent Top 10 highscore system
-- Menu, pause and game-over state management
-- Fallback static maze if the maze generator cannot be loaded
-- Cheat mode for testing
+## Main Features
+
+* Procedurally generated mazes using the assigned **A-Maze-ing** package
+* Fixed seed for the first level
+* Random maze generation for subsequent levels
+* Autonomous ghost AI
+* Power pellets and frightened ghost mode
+* Ghost respawn system
+* Multiple game levels
+* Persistent Top 10 highscores
+* Menu, pause and game-over screens
+* Built-in fallback maze when maze generation fails
+* Cheat mode for testing and debugging
+
+---
+
+# Gameplay
+
+The player controls Pac-Man and must collect every pellet within the maze while avoiding ghosts.
+
+Power pellets temporarily place ghosts into a frightened state, allowing Pac-Man to eat them for additional points.
+
+Once all pellets have been collected, the game advances to the next level, generating a new maze.
+
+The game ends when the player loses all available lives.
 
 ---
 
 # Features
 
-- Dynamic maze generation using the assigned `mazegenerator` package
-- Seeded first level for reproducible gameplay
-- Random maze generation for every following level
-- Four autonomous ghosts with different behaviors
-- Ghost house generated from the maze's "42" watermark
-- Collision detection
-- Score tracking
-- Extra lives
-- Persistent Top 10 highscores
-- Complete menu system
-- Pause menu
-- Game Over screen
-- Level progression
-- Built-in fallback maze
-- Cheat mode for debugging
+* Dynamic maze generation
+* Seeded and random maze support
+* Four autonomous ghosts
+* Ghost house generated from the maze's "42" watermark
+* Collision detection
+* Score tracking
+* Extra lives
+* Persistent Top 10 highscores
+* Complete menu system
+* Pause functionality
+* Level progression
+* Game Over screen
+* Static maze fallback
+* Cheat mode
 
 ---
 
@@ -49,17 +67,17 @@ Main features include:
 
 ## Requirements
 
-- Python 3.10+
-- pygame
-- mazegenerator 2.1.0
+* Python 3.10 or newer
+* pygame
+* mazegenerator 2.1.0
 
-The provided maze generator is included as:
+The required maze generator is included in this repository as:
 
 ```
 mazegenerator-2.1.0-py3-none-any.whl
 ```
 
-and must be installed locally.
+Since the package is not available on PyPI, it must be installed locally.
 
 ---
 
@@ -76,7 +94,7 @@ pip install pygame
 pip install ./mazegenerator-2.1.0-py3-none-any.whl
 ```
 
-Verify that the maze generator is correctly installed:
+Verify the installation:
 
 ```bash
 python -c "from mazegenerator import MazeGenerator; print('OK')"
@@ -106,75 +124,73 @@ or
 
 ## Controls
 
-| Action | Keys |
-|---------|------|
-| Move | Arrow Keys / WASD |
-| Pause | ESC |
-| Navigate Menus | Arrow Keys / W,S |
-| Confirm | Enter |
-| Cancel | ESC |
+| Action         | Keys              |
+| -------------- | ----------------- |
+| Move           | Arrow Keys / WASD |
+| Pause / Resume | ESC               |
+| Navigate Menus | Arrow Keys / W,S  |
+| Select         | Enter             |
+| Cancel         | ESC               |
 
 ### Cheat Mode
 
-| Key | Function |
-|-----|----------|
-| F1 | Add an extra life |
-| F2 | Skip current level |
-| F3 | Invincible |
-| F4 | FROZEN |
-| F5 | SPEED BOOST |
+| Key | Function      |
+| --- | ------------- |
+| F1  | Extra Life    |
+| F2  | Skip Level    |
+| F3  | Invincibility |
+| F4  | Freeze Ghosts |
+| F5  | Speed Boost   |
 
 ---
 
 # Configuration
 
-The project uses several configurable constants to control gameplay.
+The game behaviour is controlled through configuration constants defined within the project source code.
 
-These include values such as:
+The default configuration includes values such as:
 
-- Window dimensions
-- Player speed
-- Ghost speed
-- Number of lives
-- Tile size
-- Pellet values
-- Power pellet duration
-- Frame rate
+| Parameter             | Purpose                  | Default         |
+| --------------------- | ------------------------ | --------------- |
+| Window Size           | Game window resolution   | 1000 × 950      |
+| Tile Size             | Size of each maze tile   | 25 px           |
+| Initial Lives         | Player starting lives    | 3               |
+| FPS                   | Target frame rate        | 60              |
+| Player Speed          | Pac-Man movement speed   | Project default |
+| Ghost Speed           | Ghost movement speed     | Project default |
+| Pellet Score          | Normal pellet points     | Project default |
+| Power Pellet Duration | Frightened mode duration | Project default |
 
-The first level is generated using a fixed seed to ensure deterministic behaviour during evaluation.
+Maze generation follows the following configuration strategy:
 
-Every subsequent level is generated using a new random seed to improve replayability.
+* **Level 1** uses a fixed random seed to produce the same maze every execution.
+* **Levels 2 and above** generate a completely new random maze.
+* The provided **A-Maze-ing** package internally handles maze dimensions, path validity, and placement of the required "42" watermark.
 
-The maze generator itself is configured internally by the provided `mazegenerator` package.
+If maze generation fails or the package cannot be imported, the application automatically loads a built-in fallback maze to ensure uninterrupted gameplay.
 
 ---
 
 # Highscore
 
-The game stores highscores inside:
+The highscore system stores game results inside:
 
 ```
 highscores.json
 ```
 
-Only the **Top 10** scores are preserved.
+After every completed game, the player's score is compared against the existing Top 10 scores.
 
-When a game ends, the player's score is compared with the existing list.
+If the score qualifies, the player is prompted to enter a name.
 
-If it belongs in the Top 10, the player is prompted to enter a name.
+The program then:
 
-The list is then:
+1. Inserts the new score.
+2. Sorts all scores in descending order.
+3. Keeps only the highest ten entries.
+4. Saves the updated list back to `highscores.json`.
 
-1. Sorted in descending order.
-2. Trimmed to ten entries.
-3. Written back to the JSON file.
-
-JSON was chosen because it is:
-
-- Human readable
-- Easy to modify
-- Lightweight
-- Supported directly by Python
+JSON was chosen because it is lightweight, human-readable, portable, and directly supported by Python's standard library without requiring additional dependencies.
 
 ---
 
@@ -182,122 +198,118 @@ JSON was chosen because it is:
 
 Maze generation is performed using the assigned **A-Maze-ing** package.
 
-The project imports:
+The game imports the generator through:
 
 ```python
 from mazegenerator import MazeGenerator
 ```
 
-The generator creates a valid maze at runtime while embedding the mandatory "42" watermark in its center.
+The generator is responsible for:
 
-The watermark is reused as the ghost house.
+* Creating a valid random maze.
+* Ensuring that every generated maze is solvable.
+* Embedding the required **"42"** watermark in the center of the maze.
+* Producing a different maze whenever a new random seed is used.
 
-Generation strategy:
+The project uses the generated **"42"** watermark as the ghost house, integrating the mandatory maze feature directly into gameplay.
 
-- Level 1 uses a fixed seed to guarantee reproducible layouts.
-- Every later level generates a new random maze.
+To ensure deterministic testing, the first level always uses the same fixed seed.
 
-If the package cannot be imported or maze generation fails, the game automatically switches to a built-in static maze, ensuring the game remains fully playable.
+Every subsequent level generates a new maze using a different seed, increasing replayability while maintaining valid layouts.
+
+If the maze generator cannot be imported or generation fails, the game automatically falls back to a predefined static maze, allowing gameplay to continue without interruption.
 
 ---
 
 # Implementation
 
-The project follows a modular design where each major responsibility is isolated into its own module.
+The project follows a modular, object-oriented architecture.
 
 The implementation includes:
 
-- Event-driven game loop
-- Finite game state machine
-- Sprite rendering using Pygame
-- Tile-based collision detection
-- Autonomous ghost movement
-- Pellet collection system
-- Score management
-- Level progression
-- Highscore persistence
-- Runtime maze generation
-- Static maze fallback
+* Event-driven game loop
+* Finite state machine for menus and gameplay
+* Tile-based movement and collision detection
+* Sprite rendering using Pygame
+* Autonomous ghost AI
+* Frightened and respawn ghost states
+* Pellet and power pellet handling
+* Runtime maze generation
+* Persistent score management
+* JSON serialization for highscores
+* Static maze fallback
 
-The game loop updates:
+Each frame performs the following sequence:
 
-1. Input
-2. Player
-3. Ghosts
-4. Collisions
-5. Rendering
-
-every frame.
+1. Process user input.
+2. Update the game state.
+3. Move Pac-Man.
+4. Update ghost behaviour.
+5. Detect collisions.
+6. Update scores and lives.
+7. Render the current frame.
 
 ---
 
 # General Software Architecture
 
-The project is divided into several logical modules.
+The project is divided into independent modules, each responsible for a specific part of the application.
 
 ```
 pacman.py
 │
 ├── Game Loop
-├── State Management
-├── Rendering
-├── Player
-├── Ghosts
+├── State Manager
 ├── Board
 ├── Maze Generator
-├── Highscores
-└── UI
+├── Player
+├── Ghost Manager
+├── Highscore Manager
+├── UI
+└── Rendering
 ```
 
-### Main Components
+## Module Overview
 
-**pacman.py**
+### pacman.py
 
-Entry point containing the primary game loop.
+Application entry point containing the main game loop.
 
-**Board**
+### Board
 
-Loads generated mazes and handles collision logic.
+Creates and manages the playable maze, tile collisions, pellets, and level loading.
 
-**Maze Generator**
+### Maze Generator
 
-Interfaces with the provided A-Maze-ing package.
+Interfaces with the provided **A-Maze-ing** package and handles fallback behaviour if maze generation fails.
 
-**Player**
+### Player
 
-Processes movement, collisions and scoring.
+Controls Pac-Man movement, collisions, scoring, and lives.
 
-**Ghosts**
+### Ghost Manager
 
-Implements autonomous ghost behaviour including chase, frightened and respawn states.
+Controls ghost movement, AI behaviour, frightened mode, collisions, and respawning.
 
-**UI**
+### UI
 
-Draws menus, score display and end screens.
+Displays menus, score information, pause screens, level transitions, and game-over screens.
 
-**Highscore Manager**
+### Highscore Manager
 
-Loads and stores highscores using JSON.
+Loads, updates, sorts, and saves the persistent Top 10 highscores.
 
 ---
 
 # Project Management
 
-Development was managed collaboratively by both authors.
+The project was developed collaboratively by **bmanalla** and **jhima**.
 
-The work was divided into independent tasks such as:
+Development was organised by dividing the work into separate implementation tasks, including gameplay mechanics, ghost behaviour, maze integration, user interface, score management, testing, debugging, and documentation.
 
-- Gameplay implementation
-- Ghost AI
-- Maze integration
-- User interface
-- Highscore system
-- Testing
-- Documentation
+Git branches were used to develop features independently before merging them into the main branch.
 
-Git branches and pull requests were used to isolate features before merging into the main branch.
-
-Project planning and progress tracking can be found in:
+Project planning, task organisation, and development history are documented in the project's management directory:
 
 ```
 project_management/
@@ -307,37 +319,40 @@ project_management/
 
 # Resources
 
-### Documentation
+## Documentation
 
-- Python Documentation
-- Pygame Documentation
-- JSON Documentation
-- 42 A-Maze-ing package documentation
+* Python Documentation
+* Pygame Documentation
+* JSON Documentation
+* A-Maze-ing Package Documentation
 
-### References
+## References
 
-- https://docs.python.org/3/
-- https://www.pygame.org/docs/
-- https://www.json.org/json-en.html
+* https://docs.python.org/3/
+* https://www.pygame.org/docs/
+* https://www.json.org/json-en.html
 
-### AI Usage
+## AI Usage
 
-Artificial Intelligence tools (ChatGPT) were used as development assistants for:
+Artificial Intelligence tools were used exclusively as development assistants.
 
-- brainstorming implementation ideas
-- debugging Python errors
-- improving documentation
-- explaining algorithms
-- reviewing code structure
-- refining the README
+**ChatGPT** was used for:
 
-All architectural decisions, implementation, testing and final code were designed, written and validated by the project authors.
+* explaining Python concepts
+* debugging implementation issues
+* discussing algorithms
+* improving documentation
+* reviewing software architecture
+* refining the README
+* generating development suggestions
+
+All software design decisions, gameplay mechanics, architecture, implementation, testing, debugging, and final code were completed, reviewed, and validated by the project authors.
 
 ---
 
 # Troubleshooting
 
-If the maze generator cannot be imported, verify:
+If the generated maze does not appear or the game reports that the maze generator failed, verify the installation:
 
 ```bash
 python --version
@@ -351,12 +366,10 @@ pip install --force-reinstall pygame
 pip install --force-reinstall ./mazegenerator-2.1.0-py3-none-any.whl
 ```
 
-If the issue persists, recreate the virtual environment.
+If the issue persists, recreate the virtual environment and reinstall all dependencies.
 
 ---
 
 # License
 
-This project was developed as part of the **42 School Common Core curriculum**.
-
-It is intended for educational purposes.
+This project was developed as part of the **42 School Common Core curriculum** and is intended exclusively for educational purposes.
