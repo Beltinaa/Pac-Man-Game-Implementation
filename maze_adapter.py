@@ -59,6 +59,9 @@ class MazeGenerationError(Exception):
 EMPTY, DOT, POWER = 0, 1, 2
 WALL_V, WALL_H = 3, 4
 CORNER_TR, CORNER_TL, CORNER_BL, CORNER_BR = 5, 6, 7, 8
+# 9 is the ghost-house door. Generated boards no longer emit one (see
+# _carve_ghost_pocket); the static fallback board still uses it, and the
+# renderer and ghost code still handle it, so the code stays reserved.
 GATE = 9
 # Solid-block wall: only ever used for the generator's own "42" watermark
 # cells, rendered by pacman.py as a filled rectangle instead of a thin
@@ -200,9 +203,17 @@ def _carve_ghost_pocket(board, pocket):
     far left/right edges, nowhere near this pocket), which would
     otherwise wipe any flank wall added here right back open again.
 
+    No ghost-house door is placed here. A door only earns its keep when
+    ghosts respawn *inside* the house and have to be let out; on generated
+    boards they respawn at their own corners instead (see ghost_target in
+    ghosts.py, which sends dead ghosts to their spawn corner), so a door
+    would be decoration -- and being drawn in its own bright colour, it read
+    as a stray pink bar sitting on top of the "42". The whole gate row is
+    simply walled. The GATE tile is still supported everywhere else, because
+    the static fallback board does use one for its classic centre house.
+
     Deliberate design choice: only the gate row is force-walled below
-    (so there's exactly one gate tile, not two gaps side by side at the
-    top). The left/right/bottom flanks are intentionally left as the
+    (so there is no gap at the top). The left/right/bottom flanks are intentionally left as the
     generator produced them, so the area around the "4" and "2" reads as
     more open -- on many seeds this does mean the pocket can be entered/
     exited from the sides or bottom as well as through the gate, not
@@ -218,12 +229,8 @@ def _carve_ghost_pocket(board, pocket):
             board[r][c] = EMPTY
 
     for c in range(pocket.col_start, pocket.col_end + 1):
-        if c == pocket.gate_col:
-            continue
         if board[pocket.gate_row][c] < WALL_V:
             board[pocket.gate_row][c] = WALL_V
-
-    board[pocket.gate_row][pocket.gate_col] = GATE
 
 
 def _seal_outer_border(board):

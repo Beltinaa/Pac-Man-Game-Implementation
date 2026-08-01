@@ -1,6 +1,7 @@
 import pygame
 
 from assets import (
+    THEME,
     blinky_img,
     clyde_img,
     inky_img,
@@ -39,9 +40,12 @@ from ui import (
     draw_pause_overlay,
     draw_player,
     draw_victory_screen,
+    sound_button_rect,
 )
+import audio
 
 init_game()
+audio.init()
 
 run = True
 while run:
@@ -50,6 +54,11 @@ while run:
     for event in events:
         if event.type == pygame.QUIT:
             run = False
+        # Handled here, before the per-state branches, so the HUD sound
+        # button works in every screen that draws it.
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if sound_button_rect().collidepoint(event.pos):
+                audio.toggle()
 
     if state.game_state == STATE_MENU:
         for event in events:
@@ -69,21 +78,21 @@ while run:
                         state.game_state = STATE_INSTRUCTIONS
                     elif selected == 'Exit':
                         run = False
-        screen.fill('black')
+        screen.fill(THEME.wall_interior)
         draw_menu()
 
     elif state.game_state == STATE_INSTRUCTIONS:
         for event in events:
             if event.type == pygame.KEYDOWN and event.key in (pygame.K_ESCAPE, pygame.K_RETURN):
                 state.game_state = STATE_MENU
-        screen.fill('black')
+        screen.fill(THEME.wall_interior)
         draw_instructions()
 
     elif state.game_state == STATE_HIGHSCORES:
         for event in events:
             if event.type == pygame.KEYDOWN and event.key in (pygame.K_ESCAPE, pygame.K_RETURN):
                 state.game_state = STATE_MENU
-        screen.fill('black')
+        screen.fill(THEME.wall_interior)
         draw_highscores_screen()
 
     elif state.game_state == STATE_PAUSED:
@@ -93,7 +102,7 @@ while run:
                     state.game_state = STATE_PLAYING
                 elif event.key == pygame.K_m:
                     state.game_state = STATE_MENU
-        screen.fill('black')
+        screen.fill(THEME.wall_interior)
         draw_board()
         draw_player()
         blinky = Ghost(
@@ -131,7 +140,7 @@ while run:
                     state.name_input = state.name_input[:-1]
                 elif event.unicode.isalnum() and len(state.name_input) < NAME_INPUT_MAX_LEN:
                     state.name_input += event.unicode.upper()
-        screen.fill('black')
+        screen.fill(THEME.wall_interior)
         draw_game_over_screen()
 
     elif state.game_state == STATE_VICTORY:
@@ -146,7 +155,7 @@ while run:
                     state.name_input = state.name_input[:-1]
                 elif event.unicode.isalnum() and len(state.name_input) < NAME_INPUT_MAX_LEN:
                     state.name_input += event.unicode.upper()
-        screen.fill('black')
+        screen.fill(THEME.wall_interior)
         draw_victory_screen()
 
     elif state.game_state == STATE_PLAYING:
@@ -174,7 +183,7 @@ while run:
             if state.level_time_remaining <= 0:
                 lose_a_life()
 
-        screen.fill('black')
+        screen.fill(THEME.wall_interior)
         draw_board()
         center_x = state.player_x + 23
         center_y = state.player_y + 24
