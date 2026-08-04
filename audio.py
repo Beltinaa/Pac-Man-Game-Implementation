@@ -12,6 +12,10 @@ button showing the muted icon:
     sound card.
   * a missing or unreadable music file.
 
+If config.MUSIC_FILE does not exist, any audio file sitting in the same
+folder is used instead, so dropping a track into assets/sounds/ works
+whatever it happens to be called.
+
 Supply your own audio file at the path in config.MUSIC_FILE. pygame's mixer
 reads .ogg and .wav everywhere; .mp3 support depends on the SDL_mixer build,
 so .ogg is the safe choice.
@@ -26,6 +30,7 @@ import state
 
 available = False
 _load_error = None
+track = None
 
 
 def _mixer():
@@ -42,34 +47,55 @@ def _mixer():
         return None
 
 
+def _resolve_track():
+    """The music file to play: config.MUSIC_FILE if it exists, else the
+    first audio file in that folder. Saves having to rename a downloaded
+    track, which is otherwise a silent and near-invisible failure."""
+    if os.path.exists(MUSIC_FILE):
+        return MUSIC_FILE
+
+    folder = os.path.dirname(MUSIC_FILE) or "."
+    if not os.path.isdir(folder):
+        return None
+    playable = sorted(
+        name for name in os.listdir(folder)
+        if name.lower().endswith((".ogg", ".wav", ".mp3", ".flac"))
+    )
+    if not playable:
+        return None
+    return os.path.join(folder, playable[0])
+
+
 def init():
     """Start the mixer and load the music track. Safe to call once at
-    startup; failures are recorded, not raised."""
-    global available, _load_error
+    startup; failures are reported on stdout and recorded, never raised."""
+    global available, _load_error, track
 
     mixer = _mixer()
     if mixer is None:
         _load_error = "this pygame build has no mixer module"
-        return
+        return _report()
 
     try:
         mixer.init()
     except Exception as exc:
         _load_error = "no audio device (%s)" % exc
-        return
+        return _report()
 
-    if not os.path.exists(MUSIC_FILE):
-        _load_error = "no music file at %s" % MUSIC_FILE
-        return
+    track = _resolve_track()
+    if track is None:
+        _load_error = "no audio file in %s" % (os.path.dirname(MUSIC_FILE) or ".")
+        return _report()
 
     try:
-        mixer.music.load(MUSIC_FILE)
+        mixer.music.load(track)
         mixer.music.set_volume(MUSIC_VOLUME)
     except Exception as exc:
-        _load_error = "could not load %s (%s)" % (MUSIC_FILE, exc)
-        return
+        _load_error = "could not load %s (%s)" % (track, exc)
+        return _report()
 
     available = True
+    print("[audio] playing %s" % track)
     if state.sound_enabled:
         start()
 
@@ -97,6 +123,13 @@ def toggle():
             start()
     else:
         music.pause()
+
+
+def _report():
+    """Say once why there will be no sound, so a silent game is not a
+    mystery. The HUD button shows the state; this explains it."""
+    if not available:
+        print("[audio] no music: %s" % status_text())
 
 
 def status_text():

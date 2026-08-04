@@ -60,16 +60,36 @@ def sound_button_rect():
 
 
 def draw_sound_button():
-    """Speaker icon in the HUD strip, filled when sound is on.
+    """Speaker icon in the HUD strip: on, off, or unavailable.
 
     Drawn in the band below the maze (y >= 900) at the far right, past the
     life icons, so it never covers the board or another readout. The icon is
     vector-drawn rather than an image so it needs no new asset and picks up
     the theme colours.
+
+    The icon says two independent things, which is what the first version
+    got wrong: it lit up only when `sound_enabled and audio.available`, so on a
+    machine with no working audio -- a pygame built without SDL_mixer, or no
+    music file yet -- clicking flipped the flag while the icon stayed
+    identical, and the button looked dead.
+
+      * switch position, always: waves = on, slash = off. This follows
+        `sound_enabled` alone, so every click visibly changes something.
+      * whether audio can actually play: full brightness when it can, half
+        when it cannot. audio.init() prints the reason once at startup.
     """
     cx, cy = SOUND_BUTTON_CENTER
-    on = state.sound_enabled and audio.available
-    color = THEME.accent if on else (110, 110, 110)
+    on = state.sound_enabled
+    usable = audio.available
+    hovered = sound_button_rect().collidepoint(pygame.mouse.get_pos())
+
+    base = THEME.accent if on else (150, 150, 150)
+    # dimmed to half when nothing can actually play
+    color = base if usable else tuple(channel // 2 for channel in base)
+
+    # hover highlight, so the button reads as clickable
+    if hovered:
+        pygame.draw.circle(screen, (45, 45, 45), (cx, cy), SOUND_BUTTON_RADIUS)
 
     pygame.draw.circle(screen, color, (cx, cy), SOUND_BUTTON_RADIUS, 2)
 
@@ -98,9 +118,9 @@ def draw_cheat_indicator():
     sat directly on top of the play area and hid pacgums and walls behind it.
 
     Each cheat becomes a one-letter disc in its own colour, placed in the gap
-    between the timer readout and the row of life icons. Hovering the mouse
-    over a badge spells the cheat out in full, so nothing is lost by
-    shortening the labels -- and the tooltip is drawn in the HUD strip too.
+    between the timer readout and the row of life icons. The letters are
+    listed on the instructions screen; there is no hover tooltip, because a
+    label long enough to be useful would reach back over the timer readout.
     """
     if not CHEATS_ENABLED:
         return
@@ -117,23 +137,12 @@ def draw_cheat_indicator():
     if not active_cheats:
         return
 
-    mouse_x, mouse_y = pygame.mouse.get_pos()
-    hovered = None
-    for index, (letter, label, color) in enumerate(active_cheats):
+    for index, (letter, _label, color) in enumerate(active_cheats):
         center = (CHEAT_BADGE_X + index * CHEAT_BADGE_SPACING, CHEAT_BADGE_Y)
         pygame.draw.circle(screen, color, center, CHEAT_BADGE_RADIUS)
         pygame.draw.circle(screen, 'black', center, CHEAT_BADGE_RADIUS, 2)
         glyph = font.render(letter, True, 'black')
         screen.blit(glyph, glyph.get_rect(center=center))
-        if ((mouse_x - center[0]) ** 2 + (mouse_y - center[1]) ** 2
-                <= CHEAT_BADGE_RADIUS ** 2):
-            hovered = (label, color)
-
-    if hovered is not None:
-        label, color = hovered
-        tip = font.render(label, True, color)
-        screen.blit(tip, tip.get_rect(midright=(CHEAT_BADGE_X - CHEAT_BADGE_RADIUS - 10,
-                                                CHEAT_BADGE_Y)))
 
 
 def draw_menu():
@@ -172,7 +181,8 @@ def draw_instructions():
         screen.blit(text, text.get_rect(center=(WIDTH // 2, 180 + i * 40)))
 
     if CHEATS_ENABLED:
-        cheat_title = font.render('some secret power moves ...', True, 'navy')
+        cheat_title = font.render(
+            'some secret power moves ...  (badges: I / F / S)', True, 'navy')
         screen.blit(cheat_title, cheat_title.get_rect(center=(WIDTH // 2, 180 + len(lines) * 40 + 20)))
         cheat_lines = [
             'F1: +1 life',
