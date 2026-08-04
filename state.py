@@ -67,6 +67,9 @@ game_won = False
 moving = False
 startup_counter = 0
 
+# Audio
+sound_enabled = True
+
 # Cheats
 cheat_invincible = False
 cheat_ghosts_frozen = False

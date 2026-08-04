@@ -2,7 +2,10 @@ import math
 
 import pygame
 
-from config import COLOR, HEIGHT, WIDTH
+from config import COLOR, HEIGHT, THEME_NAME, WIDTH
+import theme as theme_module
+
+THEME = theme_module.get(THEME_NAME)
 
 pygame.init()
 
@@ -11,32 +14,21 @@ timer = pygame.time.Clock()
 font = pygame.font.Font('freesansbold.ttf', 20)
 title_font = pygame.font.Font('freesansbold.ttf', 48)
 
-player_images = []
-for i in range(1, 5):
-    player_images.append(
-        pygame.transform.scale(
-            pygame.image.load(f'assets/player_images/{i}.png'), (45, 45)
-        )
-    )
+def _load_sprite(subdir_attr, filename, size=(45, 45)):
+    """Load one themed sprite, scaled. theme.sprite_path falls back to the
+    classic art when the active theme has not supplied that file."""
+    path = theme_module.sprite_path(THEME, subdir_attr, filename)
+    return pygame.transform.scale(pygame.image.load(path), size)
 
-blinky_img = pygame.transform.scale(
-    pygame.image.load('assets/ghost_images/red.png'), (45, 45)
-)
-pinky_img = pygame.transform.scale(
-    pygame.image.load('assets/ghost_images/pink.png'), (45, 45)
-)
-inky_img = pygame.transform.scale(
-    pygame.image.load('assets/ghost_images/blue.png'), (45, 45)
-)
-clyde_img = pygame.transform.scale(
-    pygame.image.load('assets/ghost_images/orange.png'), (45, 45)
-)
-spooked_img = pygame.transform.scale(
-    pygame.image.load('assets/ghost_images/powerup.png'), (45, 45)
-)
-dead_img = pygame.transform.scale(
-    pygame.image.load('assets/ghost_images/dead.png'), (45, 45)
-)
+
+player_images = [_load_sprite('player_dir', f'{i}.png') for i in range(1, 5)]
+
+blinky_img = _load_sprite('ghost_dir', 'red.png')
+pinky_img = _load_sprite('ghost_dir', 'pink.png')
+inky_img = _load_sprite('ghost_dir', 'blue.png')
+clyde_img = _load_sprite('ghost_dir', 'orange.png')
+spooked_img = _load_sprite('ghost_dir', 'powerup.png')
+dead_img = _load_sprite('ghost_dir', 'dead.png')
 
 # Re-export for modules that used the old module-level names
 color = COLOR

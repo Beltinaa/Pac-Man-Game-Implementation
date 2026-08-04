@@ -33,6 +33,13 @@ Tile codes are the ones documented at the top of board.py.
 
 import pygame
 
+from config import THEME_NAME
+import theme as theme_module
+
+# Taken straight from the theme rather than from assets, so this module stays
+# independent of the display surface and can be rendered headless.
+THEME = theme_module.get(THEME_NAME)
+
 # --- tile codes ------------------------------------------------------------
 WALL_V, WALL_H = 3, 4
 CORNER_TR, CORNER_TL, CORNER_BL, CORNER_BR = 5, 6, 7, 8
@@ -50,10 +57,12 @@ GATE, SOLID = 9, 10
 # Everything is drawn hard-edged, at final resolution, exactly like the
 # reference: plain pygame rects and circles, no antialiasing, no scaling and
 # no shading of any kind, so the walls stay flat.
-WALL_COLOR = (33, 33, 222)        # the reference's WALL_BLUE
-INTERIOR_COLOR = (0, 0, 0, 255)   # what the tube is hollowed out with
-GATE_COLOR = (255, 183, 255)      # ghost-house door
-LOGO_COLOR = (247, 18, 232)       # the reference's NEON_PINK, for the "42"
+# Colours come from the active theme (see theme.py) so the maze re-skins
+# along with the sprites; the geometry below is unchanged by the theme.
+WALL_COLOR = THEME.wall
+INTERIOR_COLOR = THEME.wall_interior + (255,)   # opaque: it hollows the tube
+GATE_COLOR = THEME.gate
+LOGO_COLOR = THEME.logo
 
 CELL_TILES = 2                    # tiles per maze cell, set by maze_adapter
 THICKNESS_FRAC = 0.30             # wall thickness, as a fraction of a cell

@@ -2,6 +2,17 @@ import math
 import pygame
 
 # Display
+# Background music. Drop your own audio file at this path -- .ogg is the
+# safest format (pygame reads .ogg and .wav everywhere; .mp3 depends on the
+# SDL_mixer build). A missing file is not an error: the game runs silently
+# and the HUD sound button shows as muted.
+MUSIC_FILE = 'assets/sounds/music.ogg'
+MUSIC_VOLUME = 0.4
+
+# Visual skin. See theme.py for the available names ('classic',
+# 'web-slinger') and for how to add your own art.
+THEME_NAME = 'web-slinger'
+
 WIDTH = 900
 HEIGHT = 950
 FPS = 60
