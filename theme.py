@@ -26,8 +26,13 @@ files and set `enemy_names` to whatever you want them called.
 """
 
 import os
+import re
 from collections import namedtuple
 
+# `name` is the lookup key matched against config.THEME_NAME -- it is not
+# shown anywhere. The names on screen come from `player_name` (menu title)
+# and `enemy_names`, so rename those freely; renaming `name` changes what
+# THEME_NAME has to be set to.
 Theme = namedtuple("Theme", """
     name
     wall wall_interior logo gate
@@ -58,7 +63,7 @@ CLASSIC = Theme(
 # An original comic-book skin: red webbing, blue shadows, white web-line
 # pacgums. No studio's characters or logos -- see the module docstring.
 WEB_SLINGER = CLASSIC._replace(
-    name="PACMAN",
+    name="web-slinger",
     wall=(200, 30, 45),          # web red
     wall_interior=(6, 4, 20),    # near-black with a blue cast
     logo=(30, 70, 200),          # the "42" in suit blue
@@ -74,12 +79,29 @@ WEB_SLINGER = CLASSIC._replace(
     enemy_names=("SCARLET", "VIOLET", "AZURE", "AMBER"),
 )
 
-THEMES = {t.name: t for t in (CLASSIC, WEB_SLINGER)}
+def _slug(name):
+    """Normalise a theme name for lookup: case, spaces, hyphens and
+    underscores all stop mattering, so 'web-slinger', 'web_slinger' and
+    'Web Slinger' all find the same theme."""
+    return re.sub(r"[^a-z0-9]+", "-", str(name).strip().lower()).strip("-")
+
+
+THEMES = {_slug(t.name): t for t in (CLASSIC, WEB_SLINGER)}
 
 
 def get(name):
-    """The named theme, falling back to classic if it is unknown."""
-    return THEMES.get(name, CLASSIC)
+    """The named theme, falling back to classic if it is unknown.
+
+    An unknown name is reported rather than swallowed: silently serving the
+    classic theme for a typo'd THEME_NAME looks exactly like the theme system
+    being broken, which is a miserable thing to debug.
+    """
+    theme = THEMES.get(_slug(name))
+    if theme is None:
+        print("[theme] unknown THEME_NAME %r -- using '%s'. Available: %s"
+              % (name, CLASSIC.name, ", ".join(sorted(THEMES))))
+        return CLASSIC
+    return theme
 
 
 def sprite_path(theme, subdir_attr, filename):

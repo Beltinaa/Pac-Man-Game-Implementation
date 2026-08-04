@@ -7,7 +7,7 @@ import pygame
 # SDL_mixer build). A missing file is not an error: the game runs silently
 # and the HUD sound button shows as muted.
 MUSIC_FILE = 'assets/sounds/music.ogg'
-MUSIC_VOLUME = 0.4
+MUSIC_VOLUME = 0.3
 
 # Visual skin. See theme.py for the available names ('classic',
 # 'web-slinger') and for how to add your own art.
