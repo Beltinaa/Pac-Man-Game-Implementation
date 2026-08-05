@@ -1,34 +1,43 @@
-# The assigned mazegenerator wheel annotates with PEP 604 unions ("str | bool",
-# see its mazegenerator.py lines 26 and 35). Those are evaluated at runtime, so
-# the package only imports on Python 3.10+. It ships no Requires-Python, so pip
-# installs it happily on an older interpreter and it then fails at import with
-# "unsupported operand type(s) for |". macOS's own /usr/bin/python3 is 3.9, so
-# pick the newest interpreter on PATH rather than whatever "python3" resolves
-# to. Override explicitly with: make install PYTHON_BIN=/path/to/python3.12
-# Version choice also decides whether you get SOUND. pygame publishes
-# prebuilt wheels (which bundle SDL_mixer, SDL_image and friends) only for
-# the Python versions it was released against -- 2.6.1 covers 3.9 to 3.13.
-# On anything newer, pip has no wheel to install, falls back to compiling
-# pygame from source, and quietly omits every optional module whose C
-# headers are absent on the machine. That is how you end up with a working
-# pygame that raises "mixer module not available": nothing failed loudly,
-# the build just skipped audio. So prefer a version with wheels, and only
-# fall back to a bare "python3" if none of them is installed.
+# Pac-Man -- build targets
+#
+#   make install    create the venv and install everything needed
+#   make run        play the game
+#   make clean      delete the venv, __pycache__ and tool caches
+#   make lint       flake8 + mypy
+#
+# Two environment quirks this file works around, both of which used to fail
+# in confusing ways:
+#
+# 1. Python version. The assigned mazegenerator wheel annotates with PEP 604
+#    unions ("str | bool", its mazegenerator.py lines 26 and 35). Those are
+#    evaluated at runtime, so it only imports on Python 3.10+. It declares no
+#    Requires-Python, so pip installs it happily on 3.9 and it then dies at
+#    import with "unsupported operand type(s) for |". macOS ships 3.9 as
+#    /usr/bin/python3, hence picking an interpreter rather than trusting the
+#    bare name.
+#
+# 2. Which pygame. Upstream pygame publishes prebuilt wheels only for the
+#    Python versions it was released against (2.6.1 covers 3.9 to 3.13).
+#    On anything newer pip compiles it from source and silently drops every
+#    optional module whose C headers are missing -- which is how you get a
+#    working pygame that raises "mixer module not available", and a game
+#    with no sound and no error. So: never build from source, and if
+#    upstream has no wheel for this interpreter, fall back automatically to
+#    pygame-ce, a drop-in fork that imports as `pygame` and ships wheels for
+#    newer versions. Pin one with: make install PYGAME_PKG=pygame-ce
+
 PYTHON_BIN ?= $(shell for p in python3.13 python3.12 python3.11 python3.10 python3; do \
                   command -v $$p >/dev/null 2>&1 && echo $$p && break; done)
-MIN_PYTHON := import sys; sys.exit(sys.version_info < (3, 10))
-HAS_MIXER  := import pygame; pygame.mixer
 VENV       := venv
 PYTHON     := $(VENV)/bin/python3
 PIP        := $(VENV)/bin/pip
 MAZEGEN_WHEEL := mazegenerator-2.1.0-py3-none-any.whl
 
-# Which pygame distribution to install. "pygame-ce" is a drop-in fork that
-# still imports as `pygame`; it publishes wheels for newer Python versions
-# than upstream pygame does, so it is the way to get working audio on a
-# machine that only has a very recent interpreter:
-#     make fclean && make install PYGAME_PKG=pygame-ce
-PYGAME_PKG ?= pygame
+# Empty means "try pygame, then pygame-ce". Set it to pin one.
+PYGAME_PKG ?=
+
+MIN_PYTHON := import sys; sys.exit(sys.version_info < (3, 10))
+HAS_MIXER  := import pygame; pygame.mixer
 
 MYPY_FLAGS := --warn-return-any --warn-unused-ignores \
               --ignore-missing-imports --disallow-untyped-defs \
@@ -36,64 +45,73 @@ MYPY_FLAGS := --warn-return-any --warn-unused-ignores \
 SKIP_FLAKE8 ?= 0
 SKIP_MYPY ?= 0
 
-.PHONY: install run debug clean fclean lint lint-strict check-audio
+.PHONY: all install run debug clean fclean re lint lint-strict check-audio
+
+all: install
 
 install:
+	@if [ -z "$(PYTHON_BIN)" ]; then \
+		echo "No python3 found on PATH."; exit 1; fi
 	@$(PYTHON_BIN) -c '$(MIN_PYTHON)' || { \
-		echo "$(PYTHON_BIN) is not usable, but the maze generator needs Python 3.10+."; \
-		echo "See what you have:   ls /usr/bin/python3.*"; \
-		echo "then:                make install PYTHON_BIN=<one of them>"; \
+		echo "$(PYTHON_BIN) is `$(PYTHON_BIN) -V 2>&1`, but the maze generator needs 3.10+."; \
+		echo "See what you have:  ls /usr/bin/python3.*"; \
+		echo "then:               make install PYTHON_BIN=<one of them>"; \
 		exit 1; }
-	@if [ -x $(PYTHON) ] && ! $(PYTHON) -c '$(MIN_PYTHON)'; then \
-		echo "existing $(VENV) is `$(PYTHON) -V 2>&1` -- too old, recreating it"; \
-		rm -rf $(VENV); \
+	@if [ -x $(PYTHON) ] && ! $(PYTHON) -c '$(MIN_PYTHON)' 2>/dev/null; then \
+		echo "existing $(VENV) is too old -- recreating it"; rm -rf $(VENV); fi
+	@test -x $(PYTHON) || $(PYTHON_BIN) -m venv $(VENV)
+	@$(PIP) install --upgrade --quiet pip
+	@# --only-binary refuses to compile from source, so a build that would
+	@# come out without audio fails here instead of silently succeeding.
+	@if [ -n "$(PYGAME_PKG)" ]; then \
+		echo "installing $(PYGAME_PKG) ..."; \
+		$(PIP) install --quiet --only-binary=:all: $(PYGAME_PKG) || exit 1; \
+	elif $(PIP) install --quiet --only-binary=:all: pygame 2>/dev/null; then \
+		echo "installing pygame ... done"; \
+	else \
+		echo "no pygame wheel for `$(PYTHON) -V 2>&1`, using pygame-ce ..."; \
+		$(PIP) install --quiet --only-binary=:all: pygame-ce || { \
+			echo ""; \
+			echo "Neither pygame nor pygame-ce has a wheel for this Python."; \
+			echo "Install a 3.10-3.13 interpreter and re-run:"; \
+			echo "    make clean && make install PYTHON_BIN=python3.12"; \
+			exit 1; }; \
 	fi
-	$(PYTHON_BIN) -m venv $(VENV)
-	$(PIP) install --upgrade pip
-	@# --only-binary refuses to compile pygame from source. A source build
-	@# succeeds while silently dropping audio, so failing here is the more
-	@# useful outcome: it tells you to pick a different interpreter instead
-	@# of leaving you with a mysteriously silent game.
-	@$(PIP) install --only-binary=:all: $(PYGAME_PKG) || { \
-		echo ""; \
-		echo "No prebuilt $(PYGAME_PKG) wheel for `$(PYTHON) -V 2>&1`."; \
-		echo "Building from source would work but would come out WITHOUT SOUND."; \
-		echo "Either use an interpreter that has wheels (ls /usr/bin/python3.*):"; \
-		echo "    make fclean && make install PYTHON_BIN=python3.12"; \
-		echo "or use the drop-in fork, which ships wheels for newer Pythons:"; \
-		echo "    make fclean && make install PYGAME_PKG=pygame-ce"; \
-		echo ""; \
-		exit 1; }
-	$(PIP) install flake8 mypy
-	$(PIP) install ./$(MAZEGEN_WHEEL)
+	@echo "installing flake8, mypy ..."
+	@$(PIP) install --quiet flake8 mypy
+	@echo "installing the maze generator ..."
+	@$(PIP) install --quiet ./$(MAZEGEN_WHEEL)
+	@echo ""
+	@echo "install complete -- `$(PYTHON) -V 2>&1`"
 	@$(MAKE) --no-print-directory check-audio
+	@echo "run it with:  make run"
+
+run:
+	@test -x $(PYTHON) || { echo "no venv yet -- run: make install"; exit 1; }
+	$(PYTHON) pacman.py
+
+debug:
+	$(PYTHON) -m pdb pacman.py
 
 # Reports whether this install can play sound, and what to do if not.
 check-audio:
 	@if $(PYTHON) -c '$(HAS_MIXER)' 2>/dev/null; then \
 		echo "audio: OK -- pygame has the mixer module"; \
 	else \
-		echo "audio: MISSING -- this pygame has no mixer module, the game will be silent."; \
-		echo "  This pygame was compiled from source without SDL_mixer, which happens"; \
-		echo "  when no wheel exists for `$(PYTHON) -V 2>&1`."; \
-		echo "  Fix without root by using an interpreter that has wheels:"; \
-		echo "      make fclean && make install PYTHON_BIN=python3.12"; \
-		echo "  If no such interpreter is installed, use the drop-in fork:"; \
-		echo "      make fclean && make install PYGAME_PKG=pygame-ce"; \
+		echo "audio: MISSING -- the game will run, but silently."; \
+		echo "  This pygame has no mixer module. Try:"; \
+		echo "      make clean && make install PYGAME_PKG=pygame-ce"; \
 	fi
 
-run:
-	$(PYTHON) pacman.py
-
-debug:
-	$(PYTHON) -m pdb pacman.py
-
 clean:
-	find . -path ./$(VENV) -prune -o -type d -name "__pycache__" -exec rm -rf {} +
+	rm -rf $(VENV)
+	find . -type d -name "__pycache__" -prune -exec rm -rf {} +
 	rm -rf .mypy_cache .pytest_cache
 
+# Kept as an alias: clean already removes everything.
 fclean: clean
-	rm -rf $(VENV)
+
+re: clean install
 
 lint:
 	@status=0; \

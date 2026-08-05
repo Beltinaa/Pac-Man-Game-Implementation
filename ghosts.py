@@ -2,7 +2,7 @@ from collections import deque
 
 import pygame
 
-from assets import dead_img, screen, spooked_img
+from assets import GHOST_PX, dead_img, screen, spooked_img
 from config import GHOST_HOME_ARRIVAL_RADIUS, HEIGHT, WIDTH
 import state
 from state import GHOST_RESPAWN_DELAY_FRAMES
@@ -84,16 +84,24 @@ class Ghost:
         self.rect = self.draw()
 
     def draw(self):
-        sprite = pygame.transform.scale(self.img, (36, 36))
-        if (not state.powerup and not self.dead) or (
-                state.eaten_ghost[self.id] and state.powerup and not self.dead):
-            screen.blit(sprite, (self.x_pos, self.y_pos))
-        elif state.powerup and not self.dead and not state.eaten_ghost[self.id]:
-            spooked_sprite = pygame.transform.scale(spooked_img, (36, 36))
-            screen.blit(spooked_sprite, (self.x_pos, self.y_pos))
+        """Blit the right sprite for this ghost's current state.
+
+        Drawn centred on the collision centre rather than from the top-left,
+        so a theme that scales its art up (THEME.ghost_scale) grows outward
+        evenly instead of drifting down-right. The collision box below stays
+        36px whatever the art does, so looks never change the hitbox.
+        """
+        if self.dead:
+            image = dead_img
+        elif state.powerup and not state.eaten_ghost[self.id]:
+            image = spooked_img
         else:
-            dead_sprite = pygame.transform.scale(dead_img, (36, 36))
-            screen.blit(dead_sprite, (self.x_pos, self.y_pos))
+            image = self.img
+
+        sprite = pygame.transform.smoothscale(image, (GHOST_PX, GHOST_PX))
+        screen.blit(sprite, sprite.get_rect(
+            center=(self.center_x, self.center_y)))
+
         ghost_rect = pygame.rect.Rect(
             (self.center_x - 18, self.center_y - 18), (36, 36)
         )

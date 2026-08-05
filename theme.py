@@ -37,6 +37,8 @@ Theme = namedtuple("Theme", """
     name
     wall wall_interior logo gate
     dot power_pellet
+    dot_image power_image dot_image_px power_image_px
+    ghost_scale
     hud_text title accent
     player_dir ghost_dir
     player_name enemy_names
@@ -51,6 +53,16 @@ CLASSIC = Theme(
     gate=(255, 183, 255),
     dot=(255, 255, 255),
     power_pellet=(255, 255, 255),
+    # Pacgum artwork. None = draw the plain circles the arcade game uses.
+    # Paths are relative to assets/; the _px values are the drawn size, and
+    # both are a little larger than the circles they replace so a detailed
+    # sprite is still readable at speed.
+    dot_image=None,
+    power_image=None,
+    dot_image_px=20,
+    power_image_px=28,
+    # Multiplies the enemy sprite size. 1.0 matches the player exactly.
+    ghost_scale=1.0,
     hud_text=(255, 255, 255),
     title=(255, 255, 0),
     accent=(0, 0, 255),
@@ -73,6 +85,9 @@ WEB_SLINGER = CLASSIC._replace(
     hud_text=(235, 240, 255),
     title=(200, 30, 45),
     accent=(30, 70, 200),
+    dot_image="webslinger/spider.png",
+    power_image="webslinger/net.png",
+    ghost_scale=1.15,
     player_dir="webslinger/player",
     ghost_dir="webslinger/enemies",
     player_name="WEB-SLINGER",
@@ -102,6 +117,14 @@ def get(name):
               % (name, CLASSIC.name, ", ".join(sorted(THEMES))))
         return CLASSIC
     return theme
+
+
+def image_path(relative):
+    """Path to a themed image under assets/, or None if it is not there."""
+    if not relative:
+        return None
+    path = os.path.join("assets", relative)
+    return path if os.path.exists(path) else None
 
 
 def sprite_path(theme, subdir_attr, filename):

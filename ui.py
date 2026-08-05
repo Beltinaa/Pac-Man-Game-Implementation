@@ -1,6 +1,9 @@
 import pygame
 
-from assets import THEME, font, player_images, screen, title_font
+from assets import (
+    THEME, dot_img, font, player_images, power_img, screen, small_font,
+    title_font,
+)
 from config import CHEATS_ENABLED, FPS, HEIGHT, NAME_INPUT_MAX_LEN, TOTAL_LEVELS, WIDTH
 from highscores import load_highscores
 import state
@@ -160,40 +163,95 @@ def draw_menu():
     )
 
 
-def draw_instructions():
-    title = title_font.render('HOW TO PLAY', True, 'yellow')
-    screen.blit(title, title.get_rect(center=(WIDTH // 2, 150)))
-    lines = [
-        '',
-        'Move: Arrow Keys or WASD',
-        'Eat every pacgum and super-pacgum to clear a level.',
-        'A super-pacgum makes the ghosts edible for a short time --',
-        'eat them for bonus points before it wears off.',
-        'Touching a non-edible ghost costs you a life.',
-        '',
-        'Pause: ESC or P',
-        'Sound: click the speaker in the bottom-right corner',
-        '',
-        'Press ESC or ENTER to return to the menu',
-    ]
-    for i, line in enumerate(lines):
-        text = font.render(line, True, 'white')
-        screen.blit(text, text.get_rect(center=(WIDTH // 2, 180 + i * 40)))
+def _panel(rect, border):
+    """A translucent card with a themed border, used to group a section."""
+    surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+    surface.fill((*THEME.wall_interior, 200))
+    screen.blit(surface, rect.topleft)
+    pygame.draw.rect(screen, border, rect, 2, border_radius=10)
 
+
+def _section(rect, heading, rows, accent):
+    """Draw one titled card: heading bar, then `rows` of (key, description).
+
+    Keys are drawn in the accent colour and right-aligned against a shared
+    column, descriptions in the body colour to their left-aligned column, so
+    the two line up down the card instead of every row being centred
+    independently.
+    """
+    _panel(rect, accent)
+
+    label = font.render(heading, True, accent)
+    screen.blit(label, (rect.x + 18, rect.y + 12))
+    pygame.draw.line(screen, accent, (rect.x + 14, rect.y + 40),
+                     (rect.right - 14, rect.y + 40), 1)
+
+    key_right = rect.x + 150
+    text_left = rect.x + 170
+    for index, (key, description) in enumerate(rows):
+        y = rect.y + 56 + index * 26
+        if key:
+            rendered = small_font.render(key, True, accent)
+            screen.blit(rendered, rendered.get_rect(topright=(key_right, y)))
+        rendered = small_font.render(description, True, THEME.hud_text)
+        screen.blit(rendered, (text_left, y))
+
+
+def draw_instructions():
+    """The how-to-play screen: a heading and two or three themed cards.
+
+    Replaces a single centred column of sentences. Everything is laid out
+    from the theme palette rather than hard-coded yellow/white/navy, so it
+    re-skins with the rest of the game -- the old cheat section in particular
+    was drawn in 'navy', which on a dark background was nearly unreadable.
+    """
+    title = title_font.render('HOW TO PLAY', True, THEME.title)
+    screen.blit(title, title.get_rect(center=(WIDTH // 2, 70)))
+
+    subtitle = small_font.render(
+        'clear every pacgum to finish a level', True, THEME.hud_text)
+    screen.blit(subtitle, subtitle.get_rect(center=(WIDTH // 2, 108)))
+
+    margin, width = 60, WIDTH - 120
+
+    _section(
+        pygame.Rect(margin, 140, width, 148), 'CONTROLS',
+        [
+            ('Arrows / WASD', 'move'),
+            ('ESC  or  P', 'pause'),
+            ('speaker icon', 'sound on / off'),
+        ],
+        THEME.accent,
+    )
+
+    _section(
+        pygame.Rect(margin, 306, width, 174), 'RULES',
+        [
+            ('pacgum', 'eat them all to clear the level'),
+            ('super-pacgum', 'makes enemies edible for a while'),
+            ('edible enemy', 'eat it for bonus points'),
+            ('enemy', 'costs a life on contact'),
+        ],
+        THEME.title,
+    )
+
+    bottom = 480
     if CHEATS_ENABLED:
-        cheat_title = font.render(
-            'some secret power moves ...  (badges: I / F / S)', True, 'navy')
-        screen.blit(cheat_title, cheat_title.get_rect(center=(WIDTH // 2, 180 + len(lines) * 40 + 20)))
-        cheat_lines = [
-            'F1: +1 life',
-            'F2: clear all pacgums',
-            'F3: toggle invincibility',
-            'F4: toggle ghost freeze',
-            'F5: toggle speed boost',
-        ]
-        for i, line in enumerate(cheat_lines):
-            text = font.render(line, True, 'navy')
-            screen.blit(text, text.get_rect(center=(WIDTH // 2, 180 + len(lines) * 40 + 60 + i * 28)))
+        _section(
+            pygame.Rect(margin, 498, width, 200), 'SECRET POWER MOVES',
+            [
+                ('F1', '+1 life'),
+                ('F2', 'clear all pacgums'),
+                ('F3', 'invincibility        badge I'),
+                ('F4', 'freeze the enemies   badge F'),
+                ('F5', 'speed boost          badge S'),
+            ],
+            THEME.power_pellet,
+        )
+        bottom = 698
+
+    footer = font.render('ESC or ENTER to go back', True, THEME.hud_text)
+    screen.blit(footer, footer.get_rect(center=(WIDTH // 2, bottom + 40)))
 
 
 def draw_highscores_screen():
@@ -279,16 +337,16 @@ def draw_board():
     screen.blit(_wall_layer_for(state.level, num2, num1), (0, 0))
     for i in range(len(state.level)):
         for j in range(len(state.level[i])):
-            if state.level[i][j] == 1:
-                pygame.draw.circle(
-                    screen, THEME.dot,
-                    (j * num2 + (0.5 * num2), i * num1 + (0.5 * num1)), 4,
-                )
-            if state.level[i][j] == 2 and not state.flicker:
-                pygame.draw.circle(
-                    screen, THEME.power_pellet,
-                    (j * num2 + (0.5 * num2), i * num1 + (0.5 * num1)), 10,
-                )
+            tile = state.level[i][j]
+            if tile != 1 and not (tile == 2 and not state.flicker):
+                continue
+            center = (j * num2 + (0.5 * num2), i * num1 + (0.5 * num1))
+            image = dot_img if tile == 1 else power_img
+            if image is not None:
+                screen.blit(image, image.get_rect(center=center))
+            else:
+                color = THEME.dot if tile == 1 else THEME.power_pellet
+                pygame.draw.circle(screen, color, center, 4 if tile == 1 else 10)
 
 
 def draw_player():
