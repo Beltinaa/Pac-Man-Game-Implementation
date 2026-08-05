@@ -12,9 +12,13 @@ button showing the muted icon:
     sound card.
   * a missing or unreadable music file.
 
-If config.MUSIC_FILE does not exist, any audio file sitting in the same
-folder is used instead, so dropping a track into assets/sounds/ works
-whatever it happens to be called.
+The track is chosen in three steps, first hit wins:
+
+  1. the active theme's own music (Theme.music), so switching skins in
+     config.py switches the soundtrack with it;
+  2. config.MUSIC_FILE, for overriding both themes at once;
+  3. any audio file sitting in that folder, so dropping a track into
+     assets/sounds/ works whatever it happens to be called.
 
 Supply your own audio file at the path in config.MUSIC_FILE. pygame's mixer
 reads .ogg and .wav everywhere; .mp3 support depends on the SDL_mixer build,
@@ -25,8 +29,11 @@ import os
 
 import pygame
 
-from config import MUSIC_FILE, MUSIC_VOLUME
+from config import MUSIC_FILE, MUSIC_VOLUME, THEME_NAME
 import state
+import theme as theme_module
+
+THEME = theme_module.get(THEME_NAME)
 
 available = False
 _load_error = None
@@ -48,9 +55,14 @@ def _mixer():
 
 
 def _resolve_track():
-    """The music file to play: config.MUSIC_FILE if it exists, else the
-    first audio file in that folder. Saves having to rename a downloaded
-    track, which is otherwise a silent and near-invisible failure."""
+    """The music file to play: the theme's own track, else
+    config.MUSIC_FILE, else the first audio file in that folder. The last
+    step saves having to rename a downloaded track, which is otherwise a
+    silent and near-invisible failure."""
+    themed = theme_module.image_path(THEME.music)
+    if themed is not None:
+        return themed
+
     if os.path.exists(MUSIC_FILE):
         return MUSIC_FILE
 

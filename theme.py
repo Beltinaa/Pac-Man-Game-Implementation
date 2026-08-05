@@ -18,6 +18,7 @@ To add your own art, drop PNGs into the folders named by `player_dir` and
     assets/<ghost_dir>/orange.png          enemy 4
     assets/<ghost_dir>/powerup.png         enemy while you are powered up
     assets/<ghost_dir>/dead.png            enemy eyes, heading home
+    assets/<music>                        background music for the skin
 
 Use art you have the rights to. Characters from Marvel, Disney and the like
 are trademarked, so this file ships an original web-slinger palette rather
@@ -38,6 +39,7 @@ Theme = namedtuple("Theme", """
     wall wall_interior logo gate
     dot power_pellet
     dot_image power_image dot_image_px power_image_px
+    music
     ghost_scale
     hud_text title accent
     player_dir ghost_dir
@@ -59,6 +61,10 @@ CLASSIC = Theme(
     # sprite is still readable at speed.
     dot_image=None,
     power_image=None,
+    # Background music for this skin, relative to assets/. audio.py falls
+    # back to config.MUSIC_FILE, then to any audio file in that folder, so a
+    # theme whose track is missing still plays something rather than nothing.
+    music="sounds/classic.ogg",
     dot_image_px=20,
     power_image_px=28,
     # Multiplies the enemy sprite size. 1.0 matches the player exactly.
@@ -87,6 +93,7 @@ WEB_SLINGER = CLASSIC._replace(
     accent=(30, 70, 200),
     dot_image="webslinger/spider.png",
     power_image="webslinger/net.png",
+    music="sounds/spiderman.ogg",
     ghost_scale=1.15,
     player_dir="webslinger/player",
     ghost_dir="webslinger/enemies",

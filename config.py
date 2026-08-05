@@ -6,6 +6,9 @@ import pygame
 # safest format (pygame reads .ogg and .wav everywhere; .mp3 depends on the
 # SDL_mixer build). A missing file is not an error: the game runs silently
 # and the HUD sound button shows as muted.
+# Optional override. Each theme names its own track (see theme.py), which is
+# used when it exists; set this to a real path to force one track for every
+# theme instead. If neither exists, any audio file in the folder is played.
 MUSIC_FILE = 'assets/sounds/music.ogg'
 MUSIC_VOLUME = 0.3
 
