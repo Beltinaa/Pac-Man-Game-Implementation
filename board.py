@@ -14,10 +14,9 @@
 # every level after that is freshly, randomly generated (see pacman.py's
 # prepare_level(), which calls load_level() again for each new level).
 
+from config import LEVEL_1_SEED
 from maze_adapter import generate_board, MazeGenerationError
 from _fallback_board import _FALLBACK_BOARD
-
-LEVEL_1_SEED = 42
 
 
 def load_level(seed):
