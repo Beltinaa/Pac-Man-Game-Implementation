@@ -12,8 +12,9 @@ import pygame
 MUSIC_FILE = 'assets/sounds/music.ogg'
 MUSIC_VOLUME = 0.3
 
-# Visual skin. See theme.py for the available names ('classic',
-# 'web-slinger') and for how to add your own art.
+# Fallback skin. The main menu's character picker chooses the theme at
+# runtime, so this only matters to code that runs before a pick is made.
+# See theme.py for the available names and for how to add your own art.
 THEME_NAME = 'web-slinger'
 
 WIDTH = 900

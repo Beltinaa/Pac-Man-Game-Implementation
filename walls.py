@@ -33,12 +33,12 @@ Tile codes are the ones documented at the top of board.py.
 
 import pygame
 
-from config import THEME_NAME
 import theme as theme_module
 
-# Taken straight from the theme rather than from assets, so this module stays
-# independent of the display surface and can be rendered headless.
-THEME = theme_module.get(THEME_NAME)
+# Colours are read from theme.active() at render time rather than captured at
+# import, because the character picker in the main menu can change the theme
+# while the game is running. Taken from theme rather than assets so this
+# module stays independent of the display surface and renders headless.
 
 # --- tile codes ------------------------------------------------------------
 WALL_V, WALL_H = 3, 4
@@ -59,11 +59,6 @@ GATE, SOLID = 9, 10
 # no shading of any kind, so the walls stay flat.
 # Colours come from the active theme (see theme.py) so the maze re-skins
 # along with the sprites; the geometry below is unchanged by the theme.
-WALL_COLOR = THEME.wall
-INTERIOR_COLOR = THEME.wall_interior + (255,)   # opaque: it hollows the tube
-GATE_COLOR = THEME.gate
-LOGO_COLOR = THEME.logo
-
 CELL_TILES = 2                    # tiles per maze cell, set by maze_adapter
 THICKNESS_FRAC = 0.30             # wall thickness, as a fraction of a cell
 BORDER_FRAC = 0.15                # blue border, as a fraction of the thickness
@@ -173,7 +168,7 @@ def _stamp_pass(surface, grid, tile_w, tile_h, half, color):
                         _arms(grid, row, col))
 
 
-def _draw_logo(surface, grid, tile_w, tile_h, half):
+def _draw_logo(surface, grid, tile_w, tile_h, half, logo_color):
     """Fill each "42" cell with the logo colour, the way the reference's
     draw_maze does for its cell==15 tiles.
 
@@ -191,13 +186,13 @@ def _draw_logo(surface, grid, tile_w, tile_h, half):
             x = col * tile_w - tile_w // 2 + half
             y = row * tile_h - tile_h // 2 + half
             pygame.draw.rect(
-                surface, LOGO_COLOR,
+                surface, logo_color,
                 (x, y,
                  CELL_TILES * tile_w - 2 * half, CELL_TILES * tile_h - 2 * half),
             )
 
 
-def _draw_gates(surface, grid, tile_w, tile_h, bar_h):
+def _draw_gates(surface, grid, tile_w, tile_h, bar_h, gate_color):
     """The ghost-house door: a flat coloured bar, not part of the tubes."""
     for row, line in enumerate(grid):
         for col, tile in enumerate(line):
@@ -205,7 +200,7 @@ def _draw_gates(surface, grid, tile_w, tile_h, bar_h):
                 continue
             y_mid = row * tile_h + tile_h // 2
             pygame.draw.rect(
-                surface, GATE_COLOR,
+                surface, gate_color,
                 (col * tile_w, y_mid - bar_h // 2, tile_w, bar_h),
             )
 
@@ -213,6 +208,12 @@ def _draw_gates(surface, grid, tile_w, tile_h, bar_h):
 def render_wall_layer(grid, width, height, tile_w, tile_h):
     """Render the whole maze (walls + ghost gate) to a transparent surface of
     `width` x `height`, ready to be blitted under the pacgums and sprites."""
+    theme = theme_module.active()
+    wall_color = theme.wall
+    interior_color = theme.wall_interior + (255,)   # opaque: hollows the tube
+    gate_color = theme.gate
+    logo_color = theme.logo
+
     surface = pygame.Surface((width, height), pygame.SRCALPHA)
 
     cell = min(tile_w, tile_h) * CELL_TILES
@@ -221,10 +222,11 @@ def render_wall_layer(grid, width, height, tile_w, tile_h):
     inner = thickness - 2 * border
 
     # the "42" goes down first, then the walls are drawn over it
-    _draw_logo(surface, grid, tile_w, tile_h, thickness // 2)
+    _draw_logo(surface, grid, tile_w, tile_h, thickness // 2, logo_color)
     # pass 1: the solid silhouette -- pass 2: the same shapes, hollowed out
-    _stamp_pass(surface, grid, tile_w, tile_h, thickness // 2, WALL_COLOR)
+    _stamp_pass(surface, grid, tile_w, tile_h, thickness // 2, wall_color)
     if 0 < inner < thickness:
-        _stamp_pass(surface, grid, tile_w, tile_h, inner // 2, INTERIOR_COLOR)
-    _draw_gates(surface, grid, tile_w, tile_h, max(2, int(cell * GATE_HEIGHT_FRAC)))
+        _stamp_pass(surface, grid, tile_w, tile_h, inner // 2, interior_color)
+    _draw_gates(surface, grid, tile_w, tile_h,
+                max(2, int(cell * GATE_HEIGHT_FRAC)), gate_color)
     return surface

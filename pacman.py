@@ -1,14 +1,8 @@
 import pygame
 
-from assets import (
-    THEME,
-    blinky_img,
-    clyde_img,
-    inky_img,
-    pinky_img,
-    screen,
-    timer,
-)
+import assets
+from assets import screen, timer
+import theme as theme_module
 from config import (
     CHEATS_ENABLED,
     FPS,
@@ -40,9 +34,35 @@ from ui import (
     draw_pause_overlay,
     draw_player,
     draw_victory_screen,
+    character_at,
     sound_button_rect,
 )
 import audio
+
+def return_to_menu():
+    """Go back to the main menu and clear the chosen character.
+
+    The menu shows the picker with nothing selected and runs silent, so the
+    theme has to be released on the way out -- otherwise the next visit would
+    show a pre-picked character and keep playing the previous skin's music.
+    """
+    audio.stop()
+    theme_module.ACTIVE = None
+    state.game_state = STATE_MENU
+
+
+def choose_character(name):
+    """Pick a skin and start its music.
+
+    The main menu deliberately runs silent: no character has been chosen
+    there, so there is no theme and no soundtrack to play. Picking one is
+    what loads and starts the track.
+    """
+    if theme_module.ACTIVE is not None and theme_module.ACTIVE.name == name:
+        return
+    theme_module.set_active(name)
+    audio.play_theme()
+
 
 init_game()
 audio.init()
@@ -62,37 +82,54 @@ while run:
 
     if state.game_state == STATE_MENU:
         for event in events:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                picked = character_at(event.pos)
+                if picked is not None:
+                    choose_character(picked)
             if event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_UP, pygame.K_w):
                     state.menu_index = (state.menu_index - 1) % len(state.menu_options)
                 elif event.key in (pygame.K_DOWN, pygame.K_s):
                     state.menu_index = (state.menu_index + 1) % len(state.menu_options)
+                elif event.key in (pygame.K_LEFT, pygame.K_a, pygame.K_RIGHT, pygame.K_d):
+                    # step through the character portraits
+                    names = theme_module.names()
+                    step = -1 if event.key in (pygame.K_LEFT, pygame.K_a) else 1
+                    current = (names.index(theme_module.ACTIVE.name)
+                               if theme_module.ACTIVE is not None else -step)
+                    choose_character(names[(current + step) % len(names)])
                 elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
                     selected = state.menu_options[state.menu_index]
                     if selected == 'Start Game':
-                        start_new_game()
-                        state.game_state = STATE_PLAYING
+                        if theme_module.ACTIVE is None:
+                            # nothing chosen yet: treat ENTER as picking the
+                            # first character rather than silently doing
+                            # nothing, so the menu always responds
+                            choose_character(theme_module.names()[0])
+                        else:
+                            start_new_game()
+                            state.game_state = STATE_PLAYING
                     elif selected == 'Highscores':
                         state.game_state = STATE_HIGHSCORES
                     elif selected == 'Instructions':
                         state.game_state = STATE_INSTRUCTIONS
                     elif selected == 'Exit':
                         run = False
-        screen.fill(THEME.wall_interior)
+        screen.fill(theme_module.active().wall_interior)
         draw_menu()
 
     elif state.game_state == STATE_INSTRUCTIONS:
         for event in events:
             if event.type == pygame.KEYDOWN and event.key in (pygame.K_ESCAPE, pygame.K_RETURN):
-                state.game_state = STATE_MENU
-        screen.fill(THEME.wall_interior)
+                return_to_menu()
+        screen.fill(theme_module.active().wall_interior)
         draw_instructions()
 
     elif state.game_state == STATE_HIGHSCORES:
         for event in events:
             if event.type == pygame.KEYDOWN and event.key in (pygame.K_ESCAPE, pygame.K_RETURN):
-                state.game_state = STATE_MENU
-        screen.fill(THEME.wall_interior)
+                return_to_menu()
+        screen.fill(theme_module.active().wall_interior)
         draw_highscores_screen()
 
     elif state.game_state == STATE_PAUSED:
@@ -101,25 +138,25 @@ while run:
                 if event.key in (PAUSE_KEY, pygame.K_r):
                     state.game_state = STATE_PLAYING
                 elif event.key == pygame.K_m:
-                    state.game_state = STATE_MENU
-        screen.fill(THEME.wall_interior)
+                    return_to_menu()
+        screen.fill(theme_module.active().wall_interior)
         draw_board()
         draw_player()
         blinky = Ghost(
             state.blinky_x, state.blinky_y, state.targets[0], state.ghost_speeds[0],
-            blinky_img, state.blinky_direction, state.blinky_dead, state.blinky_box, 0,
+            assets.bundle().blinky_img, state.blinky_direction, state.blinky_dead, state.blinky_box, 0,
         )
         inky = Ghost(
             state.inky_x, state.inky_y, state.targets[1], state.ghost_speeds[1],
-            inky_img, state.inky_direction, state.inky_dead, state.inky_box, 1,
+            assets.bundle().inky_img, state.inky_direction, state.inky_dead, state.inky_box, 1,
         )
         pinky = Ghost(
             state.pinky_x, state.pinky_y, state.targets[2], state.ghost_speeds[2],
-            pinky_img, state.pinky_direction, state.pinky_dead, state.pinky_box, 2,
+            assets.bundle().pinky_img, state.pinky_direction, state.pinky_dead, state.pinky_box, 2,
         )
         clyde = Ghost(
             state.clyde_x, state.clyde_y, state.targets[3], state.ghost_speeds[3],
-            clyde_img, state.clyde_direction, state.clyde_dead, state.clyde_box, 3,
+            assets.bundle().clyde_img, state.clyde_direction, state.clyde_dead, state.clyde_box, 3,
         )
         blinky.draw()
         inky.draw()
@@ -135,12 +172,12 @@ while run:
                     save_highscore(state.name_input, state.score)
                     state.game_state = STATE_HIGHSCORES
                 elif event.key == pygame.K_ESCAPE:
-                    state.game_state = STATE_MENU
+                    return_to_menu()
                 elif event.key == pygame.K_BACKSPACE:
                     state.name_input = state.name_input[:-1]
                 elif event.unicode.isalnum() and len(state.name_input) < NAME_INPUT_MAX_LEN:
                     state.name_input += event.unicode.upper()
-        screen.fill(THEME.wall_interior)
+        screen.fill(theme_module.active().wall_interior)
         draw_game_over_screen()
 
     elif state.game_state == STATE_VICTORY:
@@ -150,12 +187,12 @@ while run:
                     save_highscore(state.name_input, state.score)
                     state.game_state = STATE_HIGHSCORES
                 elif event.key == pygame.K_ESCAPE:
-                    state.game_state = STATE_MENU
+                    return_to_menu()
                 elif event.key == pygame.K_BACKSPACE:
                     state.name_input = state.name_input[:-1]
                 elif event.unicode.isalnum() and len(state.name_input) < NAME_INPUT_MAX_LEN:
                     state.name_input += event.unicode.upper()
-        screen.fill(THEME.wall_interior)
+        screen.fill(theme_module.active().wall_interior)
         draw_victory_screen()
 
     elif state.game_state == STATE_PLAYING:
@@ -183,7 +220,7 @@ while run:
             if state.level_time_remaining <= 0:
                 lose_a_life()
 
-        screen.fill(THEME.wall_interior)
+        screen.fill(theme_module.active().wall_interior)
         draw_board()
         center_x = state.player_x + 23
         center_y = state.player_y + 24
@@ -221,19 +258,19 @@ while run:
         draw_player()
         blinky = Ghost(
             state.blinky_x, state.blinky_y, state.targets[0], state.ghost_speeds[0],
-            blinky_img, state.blinky_direction, state.blinky_dead, state.blinky_box, 0,
+            assets.bundle().blinky_img, state.blinky_direction, state.blinky_dead, state.blinky_box, 0,
         )
         inky = Ghost(
             state.inky_x, state.inky_y, state.targets[1], state.ghost_speeds[1],
-            inky_img, state.inky_direction, state.inky_dead, state.inky_box, 1,
+            assets.bundle().inky_img, state.inky_direction, state.inky_dead, state.inky_box, 1,
         )
         pinky = Ghost(
             state.pinky_x, state.pinky_y, state.targets[2], state.ghost_speeds[2],
-            pinky_img, state.pinky_direction, state.pinky_dead, state.pinky_box, 2,
+            assets.bundle().pinky_img, state.pinky_direction, state.pinky_dead, state.pinky_box, 2,
         )
         clyde = Ghost(
             state.clyde_x, state.clyde_y, state.targets[3], state.ghost_speeds[3],
-            clyde_img, state.clyde_direction, state.clyde_dead, state.clyde_box, 3,
+            assets.bundle().clyde_img, state.clyde_direction, state.clyde_dead, state.clyde_box, 3,
         )
         draw_misc()
         state.targets = get_targets(blinky, inky, pinky, clyde)

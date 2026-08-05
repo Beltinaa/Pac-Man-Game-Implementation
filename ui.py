@@ -1,9 +1,8 @@
 import pygame
 
-from assets import (
-    THEME, dot_img, font, player_images, power_img, screen, small_font,
-    title_font,
-)
+import assets
+from assets import font, screen, small_font, title_font
+import theme as theme_module
 from config import CHEATS_ENABLED, FPS, HEIGHT, NAME_INPUT_MAX_LEN, TOTAL_LEVELS, WIDTH
 from highscores import load_highscores
 import state
@@ -29,26 +28,26 @@ MAX_LIFE_ICONS = 4
 
 
 def draw_misc():
-    score_text = font.render(f'Score: {state.score}', True, THEME.hud_text)
+    score_text = font.render(f'Score: {state.score}', True, theme_module.active().hud_text)
     screen.blit(score_text, (10, 920))
     level_text = font.render(
-        f'Level: {state.current_level}/{TOTAL_LEVELS}', True, THEME.hud_text
+        f'Level: {state.current_level}/{TOTAL_LEVELS}', True, theme_module.active().hud_text
     )
     screen.blit(level_text, (200, 920))
     time_text = font.render(
-        f'Time: {max(0, state.level_time_remaining) // FPS}s', True, THEME.hud_text
+        f'Time: {max(0, state.level_time_remaining) // FPS}s', True, theme_module.active().hud_text
     )
     screen.blit(time_text, (400, 920))
     if state.powerup:
-        pygame.draw.circle(screen, THEME.accent, (140, 930), 15)
+        pygame.draw.circle(screen, theme_module.active().accent, (140, 930), 15)
     shown = min(state.lives, MAX_LIFE_ICONS)
     for i in range(shown):
         screen.blit(
-            pygame.transform.scale(player_images[0], (30, 30)),
+            pygame.transform.scale(assets.bundle().player_images[0], (30, 30)),
             (LIFE_ICON_X + i * LIFE_ICON_PITCH, 915),
         )
     if state.lives > shown:
-        extra = font.render(f'+{state.lives - shown}', True, THEME.hud_text)
+        extra = font.render(f'+{state.lives - shown}', True, theme_module.active().hud_text)
         screen.blit(extra, extra.get_rect(
             midleft=(LIFE_ICON_X + shown * LIFE_ICON_PITCH, 930)))
     draw_cheat_indicator()
@@ -86,7 +85,7 @@ def draw_sound_button():
     usable = audio.available
     hovered = sound_button_rect().collidepoint(pygame.mouse.get_pos())
 
-    base = THEME.accent if on else (150, 150, 150)
+    base = theme_module.active().accent if on else (150, 150, 150)
     # dimmed to half when nothing can actually play
     color = base if usable else tuple(channel // 2 for channel in base)
 
@@ -148,25 +147,99 @@ def draw_cheat_indicator():
         screen.blit(glyph, glyph.get_rect(center=center))
 
 
+# Character picker: two portraits side by side under the title.
+PICKER_Y = 300
+PICKER_RADIUS = 62
+PICKER_GAP = 200
+
+
+def _picker_centers():
+    """Screen centre of each character portrait, in theme.names() order."""
+    names = theme_module.names()
+    span = PICKER_GAP * (len(names) - 1)
+    left = WIDTH // 2 - span // 2
+    return [(left + i * PICKER_GAP, PICKER_Y) for i in range(len(names))]
+
+
+def character_at(pos):
+    """Theme name whose portrait contains `pos`, or None. Lets the picker be
+    clicked as well as driven with LEFT/RIGHT."""
+    for name, (cx, cy) in zip(theme_module.names(), _picker_centers()):
+        if (pos[0] - cx) ** 2 + (pos[1] - cy) ** 2 <= PICKER_RADIUS ** 2:
+            return name
+    return None
+
+
+def _draw_character_picker():
+    """One circular portrait per theme, the chosen one ringed and lit.
+
+    Each portrait is drawn with its own theme's colours -- its wall colour
+    for the ring, its background for the disc -- so the two options read as
+    the two skins rather than as one palette applied to both. That is also
+    why nothing here reads the active theme: before a choice is made there
+    is no active theme, and the menu still has to look right.
+    """
+    prompt = font.render('choose your character', True, (210, 210, 210))
+    screen.blit(prompt, prompt.get_rect(center=(WIDTH // 2, PICKER_Y - 110)))
+
+    names = theme_module.names()
+    for name, (cx, cy) in zip(names, _picker_centers()):
+        option = theme_module.get(name)
+        chosen = (theme_module.ACTIVE is not None
+                  and theme_module.ACTIVE.name == name)
+
+        pygame.draw.circle(screen, option.wall_interior, (cx, cy), PICKER_RADIUS)
+        pygame.draw.circle(screen, option.wall, (cx, cy), PICKER_RADIUS,
+                           5 if chosen else 2)
+
+        sprite = pygame.transform.smoothscale(
+            assets.BUNDLES[name].player_images[0], (72, 72))
+        screen.blit(sprite, sprite.get_rect(center=(cx, cy)))
+
+        label = small_font.render(
+            option.player_name, True,
+            option.title if chosen else (150, 150, 150))
+        screen.blit(label, label.get_rect(
+            center=(cx, cy + PICKER_RADIUS + 22)))
+
+
 def draw_menu():
-    title = title_font.render(THEME.player_name, True, THEME.title)
-    screen.blit(title, title.get_rect(center=(WIDTH // 2, 220)))
+    """Main menu: title, character picker, then the menu entries.
+
+    The title is the game's name rather than the theme's, because the menu is
+    shown before a character has been picked.
+    """
+    title = title_font.render('PACMAN', True, (255, 214, 0))
+    screen.blit(title, title.get_rect(center=(WIDTH // 2, 120)))
+
+    _draw_character_picker()
+
+    chosen = theme_module.ACTIVE is not None
     for i, label in enumerate(state.menu_options):
-        label_color = THEME.title if i == state.menu_index else THEME.hud_text
+        if label == 'Start Game' and not chosen:
+            label_color = (110, 110, 110)      # unavailable until a pick
+        elif i == state.menu_index:
+            label_color = theme_module.active().title
+        else:
+            label_color = theme_module.active().hud_text
         prefix = '> ' if i == state.menu_index else '  '
         text = font.render(prefix + label, True, label_color)
-        screen.blit(text, text.get_rect(center=(WIDTH // 2, 420 + i * 50)))
-    hint = font.render('UP/DOWN to choose, ENTER to select', True, 'gray')
-    screen.blit(
-        hint,
-        hint.get_rect(center=(WIDTH // 2, 420 + len(state.menu_options) * 50 + 40)),
-    )
+        screen.blit(text, text.get_rect(center=(WIDTH // 2, 500 + i * 46)))
+
+    hint_lines = ['LEFT/RIGHT or click to pick a character',
+                  'UP/DOWN to choose, ENTER to select']
+    if not chosen:
+        hint_lines.insert(0, 'pick a character to start')
+    for i, line in enumerate(hint_lines):
+        hint = small_font.render(line, True, 'gray')
+        screen.blit(hint, hint.get_rect(
+            center=(WIDTH // 2, 500 + len(state.menu_options) * 46 + 30 + i * 24)))
 
 
 def _panel(rect, border):
     """A translucent card with a themed border, used to group a section."""
     surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-    surface.fill((*THEME.wall_interior, 200))
+    surface.fill((*theme_module.active().wall_interior, 200))
     screen.blit(surface, rect.topleft)
     pygame.draw.rect(screen, border, rect, 2, border_radius=10)
 
@@ -193,7 +266,7 @@ def _section(rect, heading, rows, accent):
         if key:
             rendered = small_font.render(key, True, accent)
             screen.blit(rendered, rendered.get_rect(topright=(key_right, y)))
-        rendered = small_font.render(description, True, THEME.hud_text)
+        rendered = small_font.render(description, True, theme_module.active().hud_text)
         screen.blit(rendered, (text_left, y))
 
 
@@ -205,11 +278,11 @@ def draw_instructions():
     re-skins with the rest of the game -- the old cheat section in particular
     was drawn in 'navy', which on a dark background was nearly unreadable.
     """
-    title = title_font.render('HOW TO PLAY', True, THEME.title)
+    title = title_font.render('HOW TO PLAY', True, theme_module.active().title)
     screen.blit(title, title.get_rect(center=(WIDTH // 2, 70)))
 
     subtitle = small_font.render(
-        'clear every pacgum to finish a level', True, THEME.hud_text)
+        'clear every pacgum to finish a level', True, theme_module.active().hud_text)
     screen.blit(subtitle, subtitle.get_rect(center=(WIDTH // 2, 108)))
 
     margin, width = 60, WIDTH - 120
@@ -221,7 +294,7 @@ def draw_instructions():
             ('ESC  or  P', 'pause'),
             ('speaker icon', 'sound on / off'),
         ],
-        THEME.accent,
+        theme_module.active().accent,
     )
 
     _section(
@@ -232,7 +305,7 @@ def draw_instructions():
             ('edible enemy', 'eat it for bonus points'),
             ('enemy', 'costs a life on contact'),
         ],
-        THEME.title,
+        theme_module.active().title,
     )
 
     bottom = 480
@@ -246,11 +319,11 @@ def draw_instructions():
                 ('F4', 'freeze the enemies   badge F'),
                 ('F5', 'speed boost          badge S'),
             ],
-            THEME.power_pellet,
+            theme_module.active().power_pellet,
         )
         bottom = 698
 
-    footer = font.render('ESC or ENTER to go back', True, THEME.hud_text)
+    footer = font.render('ESC or ENTER to go back', True, theme_module.active().hud_text)
     screen.blit(footer, footer.get_rect(center=(WIDTH // 2, bottom + 40)))
 
 
@@ -321,13 +394,20 @@ def draw_victory_screen():
 # level grid object itself, so prepare_level()'s fresh copy rebuilds it.
 _wall_layer = None
 _wall_layer_level = None
+_wall_layer_theme = None
 
 
 def _wall_layer_for(level, tile_w, tile_h):
-    global _wall_layer, _wall_layer_level
-    if _wall_layer is None or _wall_layer_level is not level:
+    """Cached wall layer. Keyed on the level object *and* the active theme,
+    so picking a different character in the menu rebuilds it in its colours
+    instead of showing the previous skin's walls."""
+    global _wall_layer, _wall_layer_level, _wall_layer_theme
+    theme_name = theme_module.active().name
+    if (_wall_layer is None or _wall_layer_level is not level
+            or _wall_layer_theme != theme_name):
         _wall_layer = render_wall_layer(level, WIDTH, HEIGHT, tile_w, tile_h)
         _wall_layer_level = level
+        _wall_layer_theme = theme_name
     return _wall_layer
 
 
@@ -341,16 +421,18 @@ def draw_board():
             if tile != 1 and not (tile == 2 and not state.flicker):
                 continue
             center = (j * num2 + (0.5 * num2), i * num1 + (0.5 * num1))
-            image = dot_img if tile == 1 else power_img
+            bundle = assets.bundle()
+            image = bundle.dot_img if tile == 1 else bundle.power_img
             if image is not None:
                 screen.blit(image, image.get_rect(center=center))
             else:
-                color = THEME.dot if tile == 1 else THEME.power_pellet
+                color = theme_module.active().dot if tile == 1 else theme_module.active().power_pellet
                 pygame.draw.circle(screen, color, center, 4 if tile == 1 else 10)
 
 
 def draw_player():
-    base_image = pygame.transform.scale(player_images[state.counter // 5], (36, 36))
+    base_image = pygame.transform.scale(
+        assets.bundle().player_images[state.counter // 5], (36, 36))
     if state.direction == 0:
         screen.blit(base_image, (state.player_x, state.player_y))
     elif state.direction == 1:

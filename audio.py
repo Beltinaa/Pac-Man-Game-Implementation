@@ -12,10 +12,14 @@ button showing the muted icon:
     sound card.
   * a missing or unreadable music file.
 
+No music plays on the main menu: a character has not been picked there yet,
+so there is no theme and therefore no soundtrack to choose. play_theme() is
+called once the player picks one.
+
 The track is chosen in three steps, first hit wins:
 
-  1. the active theme's own music (Theme.music), so switching skins in
-     config.py switches the soundtrack with it;
+  1. the active theme's own music (Theme.music), so picking a character
+     picks its soundtrack with it;
   2. config.MUSIC_FILE, for overriding both themes at once;
   3. any audio file sitting in that folder, so dropping a track into
      assets/sounds/ works whatever it happens to be called.
@@ -29,11 +33,9 @@ import os
 
 import pygame
 
-from config import MUSIC_FILE, MUSIC_VOLUME, THEME_NAME
+from config import MUSIC_FILE, MUSIC_VOLUME
 import state
 import theme as theme_module
-
-THEME = theme_module.get(THEME_NAME)
 
 available = False
 _load_error = None
@@ -59,9 +61,10 @@ def _resolve_track():
     config.MUSIC_FILE, else the first audio file in that folder. The last
     step saves having to rename a downloaded track, which is otherwise a
     silent and near-invisible failure."""
-    themed = theme_module.image_path(THEME.music)
-    if themed is not None:
-        return themed
+    if theme_module.ACTIVE is not None:
+        themed = theme_module.image_path(theme_module.ACTIVE.music)
+        if themed is not None:
+            return themed
 
     if os.path.exists(MUSIC_FILE):
         return MUSIC_FILE
@@ -94,6 +97,12 @@ def init():
         _load_error = "no audio device (%s)" % exc
         return _report()
 
+    if theme_module.ACTIVE is None:
+        # Menu: mixer is up and usable, but there is no theme yet, so there
+        # is nothing to load. play_theme() finishes the job later.
+        available = True
+        return
+
     track = _resolve_track()
     if track is None:
         _load_error = "no audio file in %s" % (os.path.dirname(MUSIC_FILE) or ".")
@@ -110,6 +119,20 @@ def init():
     print("[audio] playing %s" % track)
     if state.sound_enabled:
         start()
+
+
+def play_theme():
+    """Load and start the active theme's music. Called when a character is
+    picked, so the menu itself stays silent."""
+    if _mixer() is None:
+        return
+    init()
+
+
+def stop():
+    """Silence the music, e.g. on returning to the main menu."""
+    if available and _mixer() is not None:
+        _mixer().music.stop()
 
 
 def start():

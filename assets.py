@@ -1,11 +1,10 @@
 import math
+from collections import namedtuple
 
 import pygame
 
-from config import COLOR, HEIGHT, THEME_NAME, WIDTH
+from config import COLOR, HEIGHT, WIDTH
 import theme as theme_module
-
-THEME = theme_module.get(THEME_NAME)
 
 pygame.init()
 
@@ -14,6 +13,7 @@ timer = pygame.time.Clock()
 font = pygame.font.Font('freesansbold.ttf', 20)
 title_font = pygame.font.Font('freesansbold.ttf', 48)
 small_font = pygame.font.Font('freesansbold.ttf', 16)
+
 
 def _fit(surface, size):
     """Trim transparent padding, then scale to fill `size` keeping the aspect
@@ -41,10 +41,10 @@ def _fit(surface, size):
     return canvas
 
 
-def _load_sprite(subdir_attr, filename, size=(45, 45)):
+def _load_sprite(theme, subdir_attr, filename, size=(45, 45)):
     """Load one themed sprite, trimmed and scaled. theme.sprite_path falls
-    back to the classic art when the active theme has not supplied it."""
-    path = theme_module.sprite_path(THEME, subdir_attr, filename)
+    back to the classic art when this theme has not supplied it."""
+    path = theme_module.sprite_path(theme, subdir_attr, filename)
     return _fit(pygame.image.load(path), size)
 
 
@@ -56,22 +56,43 @@ def _load_pacgum(relative, pixels):
     return _fit(pygame.image.load(path), (pixels, pixels))
 
 
-player_images = [_load_sprite('player_dir', f'{i}.png') for i in range(1, 5)]
 
-blinky_img = _load_sprite('ghost_dir', 'red.png')
-pinky_img = _load_sprite('ghost_dir', 'pink.png')
-inky_img = _load_sprite('ghost_dir', 'blue.png')
-clyde_img = _load_sprite('ghost_dir', 'orange.png')
-spooked_img = _load_sprite('ghost_dir', 'powerup.png')
-dead_img = _load_sprite('ghost_dir', 'dead.png')
+Bundle = namedtuple("Bundle", """
+    theme player_images
+    blinky_img pinky_img inky_img clyde_img spooked_img dead_img
+    dot_img power_img ghost_px
+""".split())
 
-# Pacgum artwork -- None on themes that use the arcade's plain circles.
-dot_img = _load_pacgum(THEME.dot_image, THEME.dot_image_px)
-power_img = _load_pacgum(THEME.power_image, THEME.power_image_px)
 
-# Enemy sprites are drawn at this size; the collision box stays 36px either
-# way, so a theme scaling its art up changes looks only, never hitboxes.
-GHOST_PX = max(1, round(36 * THEME.ghost_scale))
+def _build(theme):
+    """Every image one theme needs, loaded once."""
+    return Bundle(
+        theme=theme,
+        player_images=[_load_sprite(theme, 'player_dir', '%d.png' % i)
+                       for i in range(1, 5)],
+        blinky_img=_load_sprite(theme, 'ghost_dir', 'red.png'),
+        pinky_img=_load_sprite(theme, 'ghost_dir', 'pink.png'),
+        inky_img=_load_sprite(theme, 'ghost_dir', 'blue.png'),
+        clyde_img=_load_sprite(theme, 'ghost_dir', 'orange.png'),
+        spooked_img=_load_sprite(theme, 'ghost_dir', 'powerup.png'),
+        dead_img=_load_sprite(theme, 'ghost_dir', 'dead.png'),
+        dot_img=_load_pacgum(theme.dot_image, theme.dot_image_px),
+        power_img=_load_pacgum(theme.power_image, theme.power_image_px),
+        # Enemy sprites are drawn at this size; the collision box stays 36px
+        # either way, so scaling art up changes looks only, never hitboxes.
+        ghost_px=max(1, round(36 * theme.ghost_scale)),
+    )
+
+
+# Both skins are loaded up front, so picking a character in the menu is
+# instant and cannot fail halfway through with a missing-file error.
+BUNDLES = {name: _build(theme_module.get(name)) for name in theme_module.names()}
+
+
+def bundle():
+    """The image set for whichever theme is active right now."""
+    return BUNDLES[theme_module.active().name]
+
 
 # Re-export for modules that used the old module-level names
 color = COLOR

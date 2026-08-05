@@ -2,7 +2,8 @@ from collections import deque
 
 import pygame
 
-from assets import GHOST_PX, dead_img, screen, spooked_img
+import assets
+from assets import screen
 from config import GHOST_HOME_ARRIVAL_RADIUS, HEIGHT, WIDTH
 import state
 from state import GHOST_RESPAWN_DELAY_FRAMES
@@ -91,14 +92,16 @@ class Ghost:
         evenly instead of drifting down-right. The collision box below stays
         36px whatever the art does, so looks never change the hitbox.
         """
+        bundle = assets.bundle()
         if self.dead:
-            image = dead_img
+            image = bundle.dead_img
         elif state.powerup and not state.eaten_ghost[self.id]:
-            image = spooked_img
+            image = bundle.spooked_img
         else:
             image = self.img
 
-        sprite = pygame.transform.smoothscale(image, (GHOST_PX, GHOST_PX))
+        sprite = pygame.transform.smoothscale(
+            image, (bundle.ghost_px, bundle.ghost_px))
         screen.blit(sprite, sprite.get_rect(
             center=(self.center_x, self.center_y)))
 

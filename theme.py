@@ -1,8 +1,8 @@
 """Colour palettes and sprite lookup, so the game can be re-skinned.
 
 Everything that used to be a hard-coded colour or asset path now comes from
-the active Theme. Switch skins with THEME_NAME in config.py -- nothing else
-needs editing.
+the active Theme, which the main menu's character picker sets at runtime
+(see set_active). config.THEME_NAME is only the fallback default.
 
 Sprites resolve per theme with a fallback: a theme names a subfolder under
 assets/, and any file missing from it falls back to the classic art, so a
@@ -30,10 +30,10 @@ import os
 import re
 from collections import namedtuple
 
-# `name` is the lookup key matched against config.THEME_NAME -- it is not
-# shown anywhere. The names on screen come from `player_name` (menu title)
-# and `enemy_names`, so rename those freely; renaming `name` changes what
-# THEME_NAME has to be set to.
+# `name` is the lookup key used by get()/set_active() -- it is not shown
+# anywhere. The names on screen come from `player_name` and `enemy_names`,
+# so rename those freely; renaming `name` changes what has to be passed to
+# set_active (and what config.THEME_NAME must be set to).
 Theme = namedtuple("Theme", """
     name
     wall wall_interior logo gate
@@ -111,16 +111,40 @@ def _slug(name):
 THEMES = {_slug(t.name): t for t in (CLASSIC, WEB_SLINGER)}
 
 
+# The theme in force right now. None means "not chosen yet", which is the
+# state the main menu starts in: no skin, and so no music either. set_active
+# is what the character picker calls.
+ACTIVE = None
+
+
+def set_active(name):
+    """Choose the active theme. Returns it."""
+    global ACTIVE
+    ACTIVE = get(name)
+    return ACTIVE
+
+
+def active():
+    """The active theme, falling back to classic before one is chosen so
+    that anything drawn on the menu still has a palette to work with."""
+    return ACTIVE if ACTIVE is not None else CLASSIC
+
+
+def names():
+    """Theme names in a stable order, for the character picker."""
+    return [CLASSIC.name, WEB_SLINGER.name]
+
+
 def get(name):
     """The named theme, falling back to classic if it is unknown.
 
     An unknown name is reported rather than swallowed: silently serving the
-    classic theme for a typo'd THEME_NAME looks exactly like the theme system
-    being broken, which is a miserable thing to debug.
+    classic theme for a typo'd name looks exactly like the theme system being
+    broken, which is a miserable thing to debug.
     """
     theme = THEMES.get(_slug(name))
     if theme is None:
-        print("[theme] unknown THEME_NAME %r -- using '%s'. Available: %s"
+        print("[theme] unknown theme %r -- using '%s'. Available: %s"
               % (name, CLASSIC.name, ", ".join(sorted(THEMES))))
         return CLASSIC
     return theme
