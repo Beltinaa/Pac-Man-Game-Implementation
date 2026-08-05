@@ -15,14 +15,19 @@ def load_highscores():
     for entry in data:
         if isinstance(entry, dict) and 'name' in entry and 'score' in entry:
             try:
-                entries.append({'name': str(entry['name']), 'score': int(entry['score'])})
+                score = int(entry['score'])
             except (TypeError, ValueError):
                 continue
+            if score < 0:
+                continue
+            entries.append({'name': str(entry['name']), 'score': score})
     entries.sort(key=lambda e: e['score'], reverse=True)
     return entries[:MAX_HIGHSCORES]
 
 
 def save_highscore(name, score_value):
+    if score_value < 0:
+        return load_highscores()
     name = (name.strip() or 'PLAYER')[:NAME_INPUT_MAX_LEN]
     entries = load_highscores()
     entries.append({'name': name, 'score': score_value})
