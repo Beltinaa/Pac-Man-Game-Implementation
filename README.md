@@ -1,6 +1,6 @@
 # *This activity has been created as part of the 42 curriculum by `bmanalla` and `jhima`.*
 
-# Pac-Man Game Implementation
+# Pac-Man 42: Web-Slinger Edition
 
 A Python/Pygame implementation of the classic **Pac-Man** game featuring procedurally generated mazes, multiple levels, autonomous ghost AI, persistent highscores, and a complete game state system.
 
@@ -15,6 +15,12 @@ This project recreates the classic Pac-Man experience while extending it with pr
 The objective of the game is to guide Pac-Man through each maze, collect every pellet, avoid ghosts, and advance through progressively generated levels. The first level uses a deterministic maze generated from a fixed seed to ensure reproducibility, while every subsequent level generates a new maze to increase replayability.
 
 The project demonstrates object-oriented programming, event-driven game development with Pygame, procedural content generation, persistent data storage, and modular software design.
+
+## 🎮 Play Online
+
+Play or download the latest version on **itch.io**:
+
+👉 https://himajor.itch.io/pacman-42-webslinger
 
 ## Main Features
 
@@ -336,14 +342,12 @@ project_management/
 
 Artificial Intelligence tools were used exclusively as development assistants.
 
-**ChatGPT** was used for:
+**AI** was used for:
 
-* explaining Python concepts
 * debugging implementation issues
 * discussing algorithms
 * improving documentation
 * reviewing software architecture
-* refining the README
 * generating development suggestions
 
 All software design decisions, gameplay mechanics, architecture, implementation, testing, debugging, and final code were completed, reviewed, and validated by the project authors.
