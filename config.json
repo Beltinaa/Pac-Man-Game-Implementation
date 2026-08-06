@@ -16,9 +16,49 @@
       "pacgum": 42
     },
     {
+      "width": 22,
+      "height": 16,
+      "pacgum": 50
+    },
+    {
+      "width": 24,
+      "height": 17,
+      "pacgum": 58
+    },
+    {
+      "width": 26,
+      "height": 18,
+      "pacgum": 66
+    },
+    {
+      "width": 28,
+      "height": 19,
+      "pacgum": 74
+    },
+    {
       "width": 30,
       "height": 20,
       "pacgum": 80
+    },
+    {
+      "width": 30,
+      "height": 20,
+      "pacgum": 85
+    },
+    {
+      "width": 30,
+      "height": 20,
+      "pacgum": 90
+    },
+    {
+      "width": 30,
+      "height": 20,
+      "pacgum": 95
+    },
+    {
+      "width": 30,
+      "height": 20,
+      "pacgum": 100
     }
   ]
 }
